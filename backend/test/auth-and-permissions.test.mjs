@@ -22,11 +22,11 @@ async function startTestServer() {
 }
 
 async function createAccount(baseUrl, username, password = 'local-password-123') {
-  const metadata = await fetch(`${baseUrl}/api/auth/v2/signup-metadata`).then((response) => response.json());
+  const tokenResult = await fetch(`${baseUrl}/api/auth/v2/signup-token`).then((response) => response.json());
   return fetch(`${baseUrl}/api/auth/v2/signup`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ username, password, signupToken: metadata.signupToken, website: '' }),
+    body: JSON.stringify({ username, password, signupToken: tokenResult.signupToken, website: '' }),
   });
 }
 
@@ -35,6 +35,30 @@ test('database starts empty and does not seed users', async (t) => {
   t.after(() => app.close());
   const count = app.db.prepare('SELECT COUNT(*) AS count FROM users').get().count;
   assert.equal(Number(count), 0);
+});
+
+test('signup token endpoint returns only the local signup token', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const tokenResponse = await fetch(`${app.baseUrl}/api/auth/v2/signup-token`);
+  assert.equal(tokenResponse.status, 200);
+  const payload = await tokenResponse.json();
+  assert.deepEqual(Object.keys(payload), ['signupToken']);
+  assert.equal(typeof payload.signupToken, 'string');
+  assert.ok(payload.signupToken.length > 0);
+
+  const oldMetadataRoute = await fetch(`${app.baseUrl}/api/auth/v2/signup-metadata`);
+  assert.equal(oldMetadataRoute.status, 404);
+});
+
+test('health reports the RoAvatar renderer integration', async (t) => {
+  const app = await startTestServer();
+  t.after(() => app.close());
+
+  const response = await fetch(`${app.baseUrl}/api/health`);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).avatarRenderer, 'RoAvatar-Renderer');
 });
 
 test('first registered user is ID 1 and receives wildcard permissions', async (t) => {

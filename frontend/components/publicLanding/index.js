@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
 import AuthenticationStore from "../../stores/authentication";
 import { getBaseUrl2 } from "../../lib/request";
-import { getSignupMetadata, login, signup } from "../../services/auth";
+import { getSignupToken, login, signup } from "../../services/auth";
 
 const useStyles = createUseStyles({
     "@keyframes heroGlowPulse": {
@@ -190,38 +190,6 @@ const useStyles = createUseStyles({
         letterSpacing: 0.4,
         textTransform: "uppercase",
         textShadow: "0 1px 0 rgba(255,255,255,0.38)",
-    },
-    discordButton: {
-        width: "100%",
-        height: 44,
-        border: 0,
-        borderRadius: 6,
-        background: "#5865f2",
-        color: "#fff",
-        fontWeight: 700,
-        fontSize: 16,
-        cursor: "pointer",
-        marginBottom: 18,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        transition: "background 120ms ease",
-        boxShadow: "0 12px 26px rgba(57, 72, 211, 0.2), inset 0 1px 0 rgba(255,255,255,0.2)",
-        "&:hover": {
-            background: "#6772f4",
-        },
-        "&:disabled": {
-            background: "#8e95a2",
-            color: "#eef2f8",
-            cursor: "default",
-        },
-    },
-    discordIcon: {
-        width: 18,
-        height: 18,
-        fill: "#fff",
-        flexShrink: 0,
     },
     signupInput: {
         width: "100%",
@@ -415,19 +383,6 @@ const useStyles = createUseStyles({
         color: "#8b4742",
         textAlign: "center",
     },
-    signupStatus: {
-        minHeight: 18,
-        marginBottom: 10,
-        fontSize: 13,
-        color: "#5a6576",
-        textAlign: "center",
-    },
-    signupStatusOk: {
-        color: "#2b7a3c",
-    },
-    signupStatusWarn: {
-        color: "#9a5a00",
-    },
     footer: {
         background: "transparent",
         color: "#f2f7ff",
@@ -503,14 +458,7 @@ const useStyles = createUseStyles({
     },
 });
 
-const defaultSignupMetadata = {
-    isDiscordVerified: false,
-    signupToken: "",
-    discordUsername: null,
-    discordDisplay: null,
-    hasExistingAccount: false,
-    existingUsername: null,
-};
+const defaultSignupToken = "";
 
 const getErrorMessage = (error, fallbackMessage) => {
     return error?.response?.data?.errors?.[0]?.message || error?.message || fallbackMessage;
@@ -529,13 +477,12 @@ const PublicLanding = () => {
         password: "",
         confirmPassword: "",
     });
-    const [signupMetadata, setSignupMetadata] = useState(defaultSignupMetadata);
-    const [signupMetadataLoading, setSignupMetadataLoading] = useState(true);
+    const [signupToken, setSignupToken] = useState(defaultSignupToken);
+    const [signupTokenLoading, setSignupTokenLoading] = useState(true);
     const [loginLoading, setLoginLoading] = useState(false);
     const [signupLoading, setSignupLoading] = useState(false);
     const [loginFeedback, setLoginFeedback] = useState("");
     const [signupFeedback, setSignupFeedback] = useState("");
-    const [verifyButtonLocked, setVerifyButtonLocked] = useState(false);
     const [signupHoneypot, setSignupHoneypot] = useState("");
     useEffect(() => {
         if (!auth.isPending && auth.isAuthenticated) {
@@ -543,34 +490,20 @@ const PublicLanding = () => {
         }
     }, [auth.isAuthenticated, auth.isPending]);
 
-    const refreshSignupMetadata = async () => {
-        setSignupMetadataLoading(true);
+    const refreshSignupToken = async () => {
+        setSignupTokenLoading(true);
         try {
-            const result = await getSignupMetadata();
-            setSignupMetadata({
-                ...defaultSignupMetadata,
-                ...result,
-            });
+            const result = await getSignupToken();
+            setSignupToken(typeof result?.signupToken === "string" ? result.signupToken : "");
         } catch (error) {
-            setSignupMetadata(defaultSignupMetadata);
+            setSignupToken(defaultSignupToken);
         } finally {
-            setSignupMetadataLoading(false);
+            setSignupTokenLoading(false);
         }
     };
 
     useEffect(() => {
-        refreshSignupMetadata();
-    }, []);
-
-    useEffect(() => {
-        if (typeof window === "undefined") return;
-        const url = new URL(window.location.href);
-        if (url.searchParams.get("discordVerified") === "1") {
-            setVerifyButtonLocked(true);
-            url.searchParams.delete("discordVerified");
-            window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-            refreshSignupMetadata();
-        }
+        refreshSignupToken();
     }, []);
 
     const onLoginChange = (key, value) => {
@@ -621,16 +554,6 @@ const PublicLanding = () => {
         event.preventDefault();
         setSignupFeedback("");
 
-        if (!signupMetadata.isDiscordVerified) {
-            setSignupFeedback("Discord verification is required before you can sign up.");
-            return;
-        }
-
-        if (signupMetadata.hasExistingAccount && signupMetadata.existingUsername) {
-            setSignupFeedback(`This Discord account is already linked to ${signupMetadata.existingUsername}.`);
-            return;
-        }
-
         if (!signupState.username.trim()) {
             setSignupFeedback("Choose a username to continue.");
             return;
@@ -646,9 +569,9 @@ const PublicLanding = () => {
             return;
         }
 
-        if (!signupMetadata.signupToken) {
-            setSignupFeedback("Signup is not ready yet. Please wait a moment and try again.");
-            refreshSignupMetadata();
+        if (!signupToken) {
+            setSignupFeedback("Signup is not ready yet. Please try again.");
+            refreshSignupToken();
             return;
         }
 
@@ -657,7 +580,7 @@ const PublicLanding = () => {
             await signup({
                 username: signupState.username.trim(),
                 password: signupState.password,
-                signupToken: signupMetadata.signupToken,
+                signupToken,
                 website: signupHoneypot,
             });
             window.location.href = getBaseUrl2("/home");
@@ -665,7 +588,7 @@ const PublicLanding = () => {
             setSignupFeedback(getErrorMessage(error, "Signup failed. Please try again."));
             // Token is single-purpose by design (age-gated). Refresh it on failure
             // so the user can retry without a stale challenge.
-            refreshSignupMetadata();
+            refreshSignupToken();
         } finally {
             setSignupLoading(false);
         }
@@ -722,29 +645,10 @@ const PublicLanding = () => {
                 </div>
                 <div className={s.signupCard}>
                     <h2 className={s.signupHeading}>Sign Up Now!</h2>
-                    <button
-                        className={s.discordButton}
-                        disabled={verifyButtonLocked || signupMetadataLoading}
-                        onClick={() => {
-                            if (verifyButtonLocked || signupMetadataLoading) return;
-                            window.location.href = getBaseUrl2("/auth/discord-signup");
-                        }}
-                        type="button"
-                    >
-                        <svg aria-hidden="true" className={s.discordIcon} viewBox="0 0 127.14 96.36">
-                            <path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21h.01a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-11.27 68.42 68.42 0 0 1-10.84-5.18c.91-.66 1.8-1.34 2.66-2.04 20.87 9.54 43.56 9.54 64.18 0 .87.71 1.76 1.39 2.66 2.04a68.68 68.68 0 0 1-10.85 5.19 77 77 0 0 0 6.89 11.26A105.25 105.25 0 0 0 126.6 80.22c2.64-27.36-4.5-51.09-18.9-72.15ZM42.45 65.69c-6.27 0-11.41-5.73-11.41-12.78s5.04-12.78 11.41-12.78c6.37 0 11.52 5.78 11.41 12.78 0 7.05-5.04 12.78-11.41 12.78Zm42.24 0c-6.27 0-11.41-5.73-11.41-12.78s5.04-12.78 11.41-12.78c6.37 0 11.52 5.78 11.41 12.78 0 7.05-5.03 12.78-11.41 12.78Z"/>
-                        </svg>
-                        {signupMetadataLoading ? "Checking Discord..." : "Verify with Discord"}
-                    </button>
-                    <div className={`${s.signupStatus} ${signupMetadata.isDiscordVerified ? s.signupStatusOk : s.signupStatusWarn}`}>
-                        {signupMetadata.isDiscordVerified
-                            ? `Verified as ${signupMetadata.discordDisplay || signupMetadata.discordUsername || "Discord user"}`
-                            : "Discord verification is required before you can sign up."}
-                    </div>
                     <form onSubmit={onSignupSubmit}>
                         <input
                             className={s.signupInput}
-                            disabled={!signupMetadata.isDiscordVerified || signupMetadata.hasExistingAccount || signupLoading}
+                            disabled={signupLoading}
                             onChange={event => onSignupChange("username", event.target.value)}
                             placeholder="Username"
                             type="text"
@@ -752,7 +656,7 @@ const PublicLanding = () => {
                         />
                         <input
                             className={s.signupInput}
-                            disabled={!signupMetadata.isDiscordVerified || signupMetadata.hasExistingAccount || signupLoading}
+                            disabled={signupLoading}
                             onChange={event => onSignupChange("password", event.target.value)}
                             placeholder="Password"
                             type="password"
@@ -760,7 +664,7 @@ const PublicLanding = () => {
                         />
                         <input
                             className={s.signupInput}
-                            disabled={!signupMetadata.isDiscordVerified || signupMetadata.hasExistingAccount || signupLoading}
+                            disabled={signupLoading}
                             onChange={event => onSignupChange("confirmPassword", event.target.value)}
                             placeholder="Confirm Password"
                             type="password"
@@ -779,7 +683,7 @@ const PublicLanding = () => {
                         />
                         <button
                             className={s.signupButton}
-                            disabled={!signupMetadata.isDiscordVerified || signupMetadata.hasExistingAccount || signupLoading}
+                            disabled={!signupToken || signupTokenLoading || signupLoading}
                             type="submit"
                         >
                             {signupLoading ? "Creating Account..." : "Sign Up"}

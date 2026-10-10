@@ -9,8 +9,8 @@ export const login = ({ username, password }) => {
   });
 }
 
-export const getSignupMetadata = () => {
-  return request('GET', getFullUrl('auth', '/v2/signup-metadata')).then(result => result.data);
+export const getSignupToken = () => {
+  return request('GET', getFullUrl('auth', '/v2/signup-token')).then(result => result.data);
 }
 
 export const signup = ({ username, password, signupToken, website }) => {

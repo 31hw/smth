@@ -29,14 +29,14 @@ async function startTestServer() {
 }
 
 async function createOwner(baseUrl) {
-  const metadata = await fetch(`${baseUrl}/api/auth/v2/signup-metadata`).then((response) => response.json());
+  const tokenResult = await fetch(`${baseUrl}/api/auth/v2/signup-token`).then((response) => response.json());
   const response = await fetch(`${baseUrl}/api/auth/v2/signup`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       username: 'AvatarOwner',
       password: 'local-password-123',
-      signupToken: metadata.signupToken,
+      signupToken: tokenResult.signupToken,
       website: '',
     }),
   });

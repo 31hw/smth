@@ -466,7 +466,7 @@ export function createBackendServer({ db = openDatabase(), now = () => Date.now(
         status: 'ok',
         mode: 'localhost',
         gameRuntime: 'not-configured',
-        avatarRenderer: 'not-integrated',
+        avatarRenderer: 'RoAvatar-Renderer',
         seededUsers: 0,
       };
       if (req.method === 'HEAD') {
@@ -476,16 +476,8 @@ export function createBackendServer({ db = openDatabase(), now = () => Date.now(
       return sendJson(res, 200, response);
     }
 
-    if (pathname === '/api/auth/v2/signup-metadata' && req.method === 'GET') {
-      return sendJson(res, 200, {
-        isDiscordVerified: true,
-        discordUsername: null,
-        discordDisplay: 'Local account',
-        hasExistingAccount: false,
-        existingUsername: null,
-        signupToken: issueSignupToken(),
-        signupMode: 'localhost',
-      });
+    if (pathname === '/api/auth/v2/signup-token' && req.method === 'GET') {
+      return sendJson(res, 200, { signupToken: issueSignupToken() });
     }
 
     if (pathname === '/api/auth/v2/signup' && req.method === 'POST') {

@@ -36,11 +36,6 @@ const UserProfilePage = ({ username, userId, description, imageVersion, ...props
                     <meta name="twitter:image" content={headshotUrl}/>
                     <meta property="og:site_name" content="Zekoro"/>
                     <meta name="theme-color" content="#1188ff"/>
-                    <script src="/js/3d/three-r137/three.js"/>
-                    <script src="/js/3d/three-r137/MTLLoaderr.js"/>
-                    <script src="/js/3d/three-r137/OBJLoaderr.js"/>
-                    <script src="/js/3d/three-r137/RobloxOrbitControls.js"/>
-                    <script src="/js/3d/tween.js"/>
                 </Head>
             )}
             <UserProfileStore.Provider>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss"
 import { getAvatar } from "../../../services/avatar";
 import { getItemUrl } from "../../../services/catalog";
@@ -7,16 +7,18 @@ import PlayerImage from "../../playerImage"
 import Subtitle from "./subtitle"
 import Link from "../../link";
 import { getAssetRestrictions } from "../../../services/develop";
-import { Thumbnail3DHandler } from "../../thumbnail3D";
-import UserProfileStore from "../stores/UserProfileStore";
+import RoAvatarPreview from "../../RoAvatarPreview";
 import ActionButton from "../../actionButton";
 import useButtonStyles from "../../../styles/buttonStyles";
 
 const useAvatarStyles = createUseStyles({
     avatarImageWrapper: {
         maxWidth: '300px',
+        height: 300,
         margin: '0 auto',
         display: 'block',
+        position: 'relative',
+        overflow: 'hidden',
     },
     sectionRow: {
         marginTop: 12,
@@ -75,17 +77,7 @@ const useAvatarStyles = createUseStyles({
         lineHeight: "100%!important",
         minHeight: 32,
     },
-    avatarImageSpinner: {
-        display: 'flex',
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        top: 0,
-        height: '100%',
-        width: '100%',
-        zIndex: 2,
-    },
+
 });
 
 const Avatar = props => {
@@ -98,63 +90,60 @@ const Avatar = props => {
     const [assetPages, setAssetPages] = useState(1);
     const [assetPage, setAssetPage] = useState(1);
     
-    const store = UserProfileStore.useContainer();
-    
+    const [avatarModel, setAvatarModel] = useState(null);
     const [thumbType, setThumbType] = useState(0);
-    const [is3DReady, set3DReady] = useState(false);
-    /** @type RefObject<HTMLElement> */
-    const canvasParentRef = useRef(null);
-    const [thumb3D, setThumb3D] = useState(new Thumbnail3DHandler());
     
-    useEffect(async () => {
-        let avatar = await getAvatar({ userId });
-        let assetIds = avatar.assets.map(d => d.id);
-        let assetRestrictions = await getAssetRestrictions(assetIds);
-        let avatarAssets = avatar.assets.map(asset => {
-            let restriction = assetRestrictions.find(d => d.assetId === asset.id);
-            return {
-                ...asset,
-                isLimited: restriction.isLimited,
-                isLimitedUnique: restriction.isLimitedUnique,
-            };
-        });
-        setAssets(avatarAssets);
-        setSelectedAssets(avatarAssets.slice(0, assetsLimit));
+    useEffect(() => {
+        let cancelled = false;
+        setAvatarModel(null);
+        setAssets(null);
+        setSelectedAssets(null);
         setAssetPage(1);
-        setAssetPages(Math.ceil(avatarAssets.length / assetsLimit));
-    }, [userId]);
-    
-    useEffect(() => {
-        const syncThumbnail = async () => {
-            if (thumbType !== 1) {
-                set3DReady(false);
-                await thumb3D.Stop();
-                return;
-            }
-            
-            if (!store?.userAv3D?.camera || !canvasParentRef.current) {
-                set3DReady(false);
-                return;
-            }
-            
-            if (!thumb3D.isLoadingThumbnail) {
-                await thumb3D.LoadThumbnail(store.userAv3D, canvasParentRef.current, set3DReady);
+        setAssetPages(1);
+
+        const loadAvatar = async () => {
+            try {
+                const avatar = await getAvatar({ userId });
+                const wearingAssets = Array.isArray(avatar?.assets) ? avatar.assets : [];
+                if (cancelled) return;
+                setAvatarModel(avatar);
+
+                let restrictions = [];
+                if (wearingAssets.length) {
+                    try {
+                        restrictions = await getAssetRestrictions(wearingAssets.map(asset => asset.id));
+                    } catch (error) {
+                        console.warn('[profile-avatar] Could not load asset restrictions:', error);
+                    }
+                }
+                if (cancelled) return;
+
+                const avatarAssets = wearingAssets.map(asset => {
+                    const restriction = restrictions.find(item => item.assetId === asset.id);
+                    return {
+                        ...asset,
+                        isLimited: restriction?.isLimited === true,
+                        isLimitedUnique: restriction?.isLimitedUnique === true,
+                    };
+                });
+                setAssets(avatarAssets);
+                setSelectedAssets(avatarAssets.slice(0, assetsLimit));
+                setAssetPage(1);
+                setAssetPages(Math.max(1, Math.ceil(avatarAssets.length / assetsLimit)));
+            } catch (error) {
+                if (cancelled) return;
+                console.error('[profile-avatar] Could not load avatar:', error);
+                setAvatarModel(null);
+                setAssets([]);
+                setSelectedAssets([]);
             }
         };
-        
-        syncThumbnail().then();
-    }, [thumbType, store.userAv3D, store.userId, userId]);
-    
-    useEffect(() => {
-        if (typeof THREE !== "undefined" && thumb3D.scene === null) {
-            thumb3D.Init(300);
-        }
+
+        loadAvatar();
         return () => {
-            thumb3D.Dispose();
-            setThumb3D(new Thumbnail3DHandler());
-            setThumbType(0);
+            cancelled = true;
         };
-    }, [store.userId]);
+    }, [userId]);
     
     return <div className={`flex marginStuff ${s.sectionRow}`}>
         <div className='col-12'>
@@ -162,15 +151,16 @@ const Avatar = props => {
         </div>
         <div className='col-12 col-lg-6 pe-0'>
             <div className={'card ' + s.avatarImageCard}>
-                <div className={s.avatarImageWrapper} ref={canvasParentRef}>
+                <div className={s.avatarImageWrapper}>
                     <PlayerImage id={userId} invisible={thumbType === 1} />
-                    {
-                        thumbType === 1 && !is3DReady ?
-                        <div className={s.avatarImageSpinner}>
-                            <span className="spinner" style={{ height: "100%", backgroundSize: "auto 36px" }}/>
-                        </div>
-                        : null
-                    }
+                    <RoAvatarPreview
+                        userId={userId}
+                        avatar={avatarModel}
+                        active={thumbType === 1}
+                        size={300}
+                        rightOffset={0}
+                        showSnapshotWhenInactive={false}
+                    />
                 </div>
                 <div className={s.thumbnail3DButtonContainer}>
                     <ActionButton

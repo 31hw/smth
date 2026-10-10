@@ -43,7 +43,16 @@ async function setupRenderer(RBXRenderer) {
   return rendererSetup;
 }
 
-export default function RoAvatarPreview({ userId, avatar, active = true, onSnapshot }) {
+export default function RoAvatarPreview({
+  userId,
+  avatar,
+  active = true,
+  onSnapshot,
+  size = 352,
+  rightOffset = -37.5,
+  topOffset = 0,
+  showSnapshotWhenInactive = true,
+}) {
   const mountRef = useRef(null);
   const rendererModuleRef = useRef(null);
   const outfitRendererRef = useRef(null);
@@ -77,6 +86,7 @@ export default function RoAvatarPreview({ userId, avatar, active = true, onSnaps
         // RoAvatar's npm package does not include rig/mesh assets. Online assets
         // load the official rig and mesh resources while the outfit itself comes
         // from this instance's local avatar API/state.
+        module.FLAGS.BODYCOLOR3 = true;
         module.FLAGS.ONLINE_ASSETS = true;
         module.FLAGS.USE_WORKERS = false;
         module.FLAGS.INCLUDE_REQUEST_CREDENTIALS_OVERRIDE = 'omit';
@@ -84,10 +94,13 @@ export default function RoAvatarPreview({ userId, avatar, active = true, onSnaps
         if (cancelled) return;
 
         module.RBXRenderer.setBackgroundTransparent(true);
-        module.RBXRenderer.setRendererSize(352, 352);
+        module.RBXRenderer.setRendererSize(size, size);
+        const renderScene = module.RBXRenderer.firstScene;
+        renderScene.controls?.dispose();
+        module.RBXRenderer.setupControls(renderScene);
         const rendererElement = module.RBXRenderer.getRendererElement();
-        rendererElement.style.width = '352px';
-        rendererElement.style.height = '352px';
+        rendererElement.style.width = `${size}px`;
+        rendererElement.style.height = `${size}px`;
         rendererElement.style.position = 'absolute';
         rendererElement.style.inset = '0';
         rendererElement.style.overflow = 'hidden';
@@ -106,7 +119,7 @@ export default function RoAvatarPreview({ userId, avatar, active = true, onSnaps
           setRendered(true);
           setError('');
           requestAnimationFrame(() => {
-            if (cancelled) return;
+            if (cancelled || (!showSnapshotWhenInactive && !onSnapshot)) return;
             try {
               const canvas = module.RBXRenderer.getRendererDom();
               if (canvas) {
@@ -149,7 +162,7 @@ export default function RoAvatarPreview({ userId, avatar, active = true, onSnaps
     // The renderer is initialized once per signed-in user; avatar changes flow
     // through the effect below so dragging a slider does not recreate WebGL.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, avatarIsReady]);
+  }, [userId, avatarIsReady, size]);
 
   useEffect(() => {
     if (!rendererReady || !rendererModuleRef.current || !outfitRendererRef.current || !avatarIsReady || lastAvatarKeyRef.current === avatarKey) return undefined;
@@ -172,22 +185,22 @@ export default function RoAvatarPreview({ userId, avatar, active = true, onSnaps
         ref={mountRef}
         style={{
           position: 'absolute',
-          top: 0,
-          right: '-37.5px',
-          width: 352,
-          height: 352,
+          top: topOffset,
+          right: rightOffset,
+          width: size,
+          height: size,
           opacity: active ? 1 : 0,
           pointerEvents: active ? 'auto' : 'none',
         }}
       />
-      {!active && (
+      {!active && showSnapshotWhenInactive && (
         <img
           src={snapshot || '/img/placeholder/icon_one.png'}
           alt="2D avatar preview"
-          style={{ position: 'absolute', top: 18, right: '-37.5px', width: 352, height: 352, objectFit: 'contain' }}
+          style={{ position: 'absolute', top: topOffset + 18, right: rightOffset, width: size, height: size, objectFit: 'contain' }}
         />
       )}
-      {!avatarIsReady && <span className="spinner" style={{ height: '100%', backgroundSize: 'auto 36px' }} />}
+      {active && !avatarIsReady && <span className="spinner" style={{ height: '100%', backgroundSize: 'auto 36px' }} />}
       {avatarIsReady && !rendered && !error && active && (
         <span className="spinner" style={{ height: '100%', backgroundSize: 'auto 36px' }} />
       )}

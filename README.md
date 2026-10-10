@@ -6,7 +6,7 @@ A localhost-first revival using the copied ZekoroV2 frontend with a small, seedl
 
 - ZekoroV2 page layouts and copied sources are retained; avatar behavior is integrated through the existing editor component instead of a bespoke redesign. `/admin` is the new feature route required by the existing staff navigation.
 - A fresh database contains no seeded/demo users or content. The first account registered gets ID `1` and is treated as the local owner with wildcard permissions. Later users are regular members.
-- Avatar settings (body colors, scale, rig type, and worn asset metadata) and saved outfits persist per user. The Avatar Editor uses **RoAvatar-Renderer** with the local avatar model; Roblox-hosted renderer assets are loaded on demand. No RCCService is used.
+- Avatar settings (body colors, scale, rig type, and worn asset metadata) and saved outfits persist per user. The Avatar Editor and public-profile 3D preview use **RoAvatar-Renderer** with the local avatar model; Roblox-hosted renderer assets are loaded on demand. No RCCService is used.
 - `/admin` → **Web** → **Icons** lists public web images and lets administrators replace an existing image. Uploads are normalized to the target file format, preserving the existing URL while keeping the on-disk bytes, extension, and MIME type consistent (for example, a JPEG upload replacing a `.png` is converted to PNG).
 - The default connection mode is localhost. Set `REVIVAL_CONNECTION_MODE` in `frontend/.env.local` to `localhost` or `tunnel`; the tunnel transport is reserved and intentionally not enabled in this initial release, so only localhost is supported. The API binds only to loopback.
 
