@@ -1,0 +1,22 @@
+# Installed dependencies and build output
+**/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/coverage/
+
+# Local configuration and private runtime data
+frontend/config.json
+backend/data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.env
+.env.*
+!.env.example
+
+# Logs and OS/editor files
+*.log
+.DS_Store
+.idea/
+.vscode/

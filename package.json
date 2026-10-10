@@ -1,0 +1,15 @@
+{
+  "name": "smth-revival",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:api": "node backend/server.mjs",
+    "test:api": "node --test backend/test/*.test.mjs",
+    "build:web": "npm --prefix frontend run build"
+  }
+}
