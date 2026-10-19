@@ -1,6 +1,6 @@
 # Quob
 
-Quob is a minimal, light-gray shared click counter. Clicking anywhere adds a click; the browser batches bursts, retries queued clicks when rate-limited, and syncs with a long-poll connection. The Worker uses D1 for the global count and the `rl` binding to cap API requests at 120 per minute per client IP. The site is served on `quob.net`, with its API on `api.quob.net`.
+Quob is a minimal shared click counter with white numerals on a gray background. The count is zero-padded and grouped in threes (for example, `000,000,000,000,001`). Clicking anywhere adds a click; the browser batches bursts, retries queued clicks when rate-limited, and syncs with a long-poll connection. The Worker uses D1 for the global count and the `rl` binding to cap API requests at 120 per minute per client IP. The site is served on `quob.net`, with its API on `api.quob.net`.
 
 ## Preview
 
