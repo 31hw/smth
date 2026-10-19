@@ -1,0 +1,11 @@
+services:
+  smth-music:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./db:/srv/smth/db
+    environment:
+      - SMTH_HOST=0.0.0.0
+      - SMTH_PORT=5000
+    restart: unless-stopped

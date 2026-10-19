@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <img src="{{ url_for('static', filename='img/logo.svg') }}" width="48" height="48" alt="">
+    <h1>Create your account</h1>
+    {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+    <form method="post" id="register-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Username
+        <input type="text" name="username" required minlength="3" maxlength="24" pattern="[A-Za-z0-9_-]+" autocomplete="username" autofocus>
+        <small>3–24 characters, letters / numbers / <code>_</code> / <code>-</code></small>
+      </label>
+      <label>Password
+        <input type="password" name="password" required minlength="8" autocomplete="new-password">
+      </label>
+      <label>Confirm password
+        <input type="password" name="confirm_password" required minlength="8" autocomplete="new-password">
+      </label>
+      <button class="btn btn-primary" type="submit">Sign up</button>
+    </form>
+    <p class="auth-alt">Already have an account? <a href="{{ url_for('auth.login_form') }}">Log in</a></p>
+  </div>
+</div>
+{% endblock %}
