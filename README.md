@@ -1,6 +1,6 @@
 # Quob
 
-Quob is a minimal shared click counter with white numerals on a `#1f1f1f` background. The top number shows clicks for the current UTC calendar year and resets on January 1 UTC. Scroll down for synced totals for today (also UTC), the previous calendar year, and a live countdown to the next January 1 reset. Counts use standard thousands separators (for example, `999`, then `1,000`). Clicking anywhere adds a click; the browser batches bursts, retries queued clicks when rate-limited, and syncs with a long-poll connection. The Worker uses D1 for the global count and the `rl` binding to cap API requests at 120 per minute per client IP. The site is served on `quob.net`, with its API on `api.quob.net`.
+Quob is a minimal shared click counter with white numerals on a `#1f1f1f` background. The top number shows clicks for the current UTC calendar year and resets on January 1 UTC. Scroll down for synced totals for today (also UTC), the previous calendar year, a live countdown to the next January 1 reset, and a link to the Quob Discord. Counts use standard thousands separators (for example, `999`, then `1,000`). Clicking anywhere adds a click; the browser batches bursts, retries queued clicks when rate-limited, and syncs with a long-poll connection. The Worker uses D1 for the global count and the `rl` binding to cap API requests at 120 per minute per client IP. The site is served on `quob.net`, with its API on `api.quob.net`.
 
 ## Preview
 
