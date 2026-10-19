@@ -1,0 +1,23 @@
+name = "global-clicker"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+routes = [
+  { pattern = "quob.net", custom_domain = true },
+  { pattern = "api.quob.net", custom_domain = true }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "global-clicker"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[unsafe.bindings]]
+name = "rl"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 120, period = 60 }
+
+[[rules]]
+type = "Text"
+globs = ["**/index.html", "**/script.js", "**/style.css", "**/q.svg"]
+fallthrough = true
