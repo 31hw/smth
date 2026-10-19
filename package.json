@@ -1,0 +1,1 @@
+{"name":"quob","private":true,"scripts":{"build:pages":"node scripts/build-pages.js","preview":"npm run build:pages && node scripts/preview-server.js"}}

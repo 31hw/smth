@@ -1,0 +1,1 @@
+const fs=require("node:fs"),path=require("node:path"),root=path.join(__dirname,".."),output=path.join(root,"dist"),files=["index.html","script.js","style.css","q.svg","_headers"];fs.rmSync(output,{recursive:!0,force:!0}),fs.mkdirSync(output,{recursive:!0});for(const t of files)fs.copyFileSync(path.join(root,t),path.join(output,t));

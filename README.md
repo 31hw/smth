@@ -1,16 +1,22 @@
 # Quob
 
-Quob is a minimal shared click counter with white numerals on a `#1f1f1f` background. The top number shows clicks for the current UTC calendar year and resets on January 1 UTC. Scroll down for synced totals for today (also UTC), the previous calendar year, a live countdown to the next January 1 reset, and a link to the Quob Discord. Counts use standard thousands separators (for example, `999`, then `1,000`). Clicking anywhere adds a click; the browser batches bursts, retries queued clicks when rate-limited, and syncs with a long-poll connection. The Worker uses D1 for the global count and the `rl` binding to cap API requests at 120 per minute per client IP. The site is served on `quob.net`, with its API on `api.quob.net`.
+Quob is a static Cloudflare Pages site connected to a separate API Worker. The Pages project serves the files in `dist/`; the Worker exposes ordinary JSON endpoints on `api.quob.net`:
 
-## Preview
+- `GET /api/state`
+- `GET /api/updates?since=<version>` (long-poll)
+- `POST /api/click` with `{ "id": "...", "amount": 1 }`
 
-The sandbox preview is running. It uses a local D1 database and bypasses the production rate-limit binding so you can test clicks and sync.
+The main count resets at January 1 UTC. Scroll down for synced clicks today, last year's clicks, a live reset countdown, and the Discord link.
 
-## Publish from the Cloudflare dashboard
+## Cloudflare Dashboard setup
 
-1. In **Cloudflare Dashboard → Storage & databases → D1**, create a database named `global-clicker` and copy its database ID.
-2. Replace `REPLACE_WITH_D1_DATABASE_ID` in `wrangler.toml` with that ID. The ID is configuration, not a secret.
-3. In **Workers & Pages → Workers Builds**, connect the GitHub repository and select the branch you want to publish. The dashboard build reads `wrangler.toml` to bundle the site's files and configure the `DB` and `rl` bindings; you do not need to run Wrangler locally.
-4. Confirm that `quob.net` and `api.quob.net` are available as custom domains in your Cloudflare account. The Worker configuration routes both hostnames to the same Worker.
+1. Create a Pages project connected to this GitHub repository. Set the build command to `npm run build:pages`, the output directory to `dist`, and attach `quob.net` as the Pages custom domain.
+2. In **D1**, create a database for Quob.
+3. Create a separate Worker for the API and paste the contents of `worker.js` into its editor. Bind the D1 database as `DB` and add a Rate Limiting binding named `rl`, set to 120 requests per 60 seconds. Add `api.quob.net` as the Worker custom domain.
+4. The Worker creates its tables on first request. No SQL migration is needed. The database and rate-limit binding names must match exactly: `DB` and `rl`.
 
-The rate limit is 120 requests per 60 seconds per client IP. The browser queues and batches clicks, and automatically retries when the API returns a rate-limit response. The Worker initializes its tables automatically using parameterized SQL; it never executes SQL from visitors. Click request IDs make retries idempotent, with old IDs pruned after seven days. `/api/updates` holds a request for up to 24 seconds and checks D1 periodically for a newer count.
+The site calls the API on `api.quob.net`; CORS permits `quob.net` and Cloudflare Pages preview domains. The click queue retries rate-limited requests, while the worker keeps click IDs idempotent. Calendar stats use UTC. `wrangler.toml` is retained for the local preview helper; dashboard deployment does not require running Wrangler yourself.
+
+## Local preview
+
+Run `npm run preview` to build the static Pages output and start a local Pages-style server with the API Worker proxied behind `/api/*`. The preview uses a local D1 database and skips the production rate limit.
