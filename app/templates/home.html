@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<header class="hero">
+  <div>
+    <p class="hero-kicker">Your local music library</p>
+    <h1>Good listening.</h1>
+    <p class="hero-sub">
+      {{ total }} track{{ 's' if total != 1 }} approved · everything is stored
+      on this machine in <code>db/music/</code>
+    </p>
+  </div>
+</header>
+
+<section id="browse" class="section">
+  <div class="section-head">
+    <h2>Browse</h2>
+    <div class="chips" id="genre-chips">
+      <button class="chip chip-active" data-genre="">All</button>
+      {% for genre in genres %}
+      <button class="chip" data-genre="{{ genre }}">{{ genre }}</button>
+      {% endfor %}
+    </div>
+  </div>
+  <input type="search" id="search" class="search" placeholder="Search title, artist, album…" aria-label="Search tracks">
+
+  {% if tracks %}
+  <div class="track-grid" id="track-grid">
+    {% for track in tracks %}
+    <article class="card" data-title="{{ track.title }}" data-artist="{{ track.artist }}"
+             data-album="{{ track.album or '' }}" data-genre="{{ track.genre or '' }}"
+             data-slug="{{ track.slug }}" data-id="{{ track.id }}">
+      <div class="card-cover">
+        <span class="card-letter">{{ track.title[0]|upper }}</span>
+        <button class="card-play" data-play="{{ track.slug }}" aria-label="Play {{ track.title }}">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title">{{ track.title }}</h3>
+        <p class="card-artist">{{ track.artist }}</p>
+        <p class="card-meta">{{ track.album or "Single" }} · {{ track.duration|round(0)|int }}s</p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">
+    <h2>No music yet</h2>
+    <p>Uploads appear here once an admin approves them.
+      {% if current_user %}<a href="{{ url_for('music.account') }}?tab=music">Upload your first track →</a>{% else %}
+      <a href="{{ url_for('auth.register') }}">Create an account →</a>{% endif %}</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

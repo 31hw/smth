@@ -1,0 +1,34 @@
+# Runtime data (local-only by design)
+db/app.db
+db/app.db-wal
+db/app.db-shm
+db/music/*
+db/.secret_key
+db/backups/
+!db/.gitkeep
+!db/music/.gitkeep
+
+# Tunnel credentials
+config/tunnel.json
+config/cert.pem
+config/*.json
+!config/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

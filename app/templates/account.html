@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Account{% endblock %}
+
+{% block content %}
+<div class="account-layout">
+  <nav class="side-tabs" aria-label="Account sections">
+    <a href="#overview" class="side-tab {% if tab == 'overview' %}active{% endif %}" data-tab="overview">
+      <svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5z"/></svg>
+      Overview
+    </a>
+    <a href="#music" class="side-tab {% if tab == 'music' %}active{% endif %}" data-tab="music">
+      <svg viewBox="0 0 24 24"><path d="M12 3v10.6A4 4 0 1 0 14 17V7h4V3z"/></svg>
+      Music
+    </a>
+    <a href="#uploads" class="side-tab {% if tab == 'uploads' %}active{% endif %}" data-tab="uploads">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4z" opacity=".3"/><path d="M12 8l-5 5h3v4h4v-4h3z"/></svg>
+      My uploads
+    </a>
+    <a href="#security" class="side-tab {% if tab == 'security' %}active{% endif %}" data-tab="security">
+      <svg viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 8.6-8 11-4.6-2.4-8-6-8-11V5z"/></svg>
+      Security
+    </a>
+  </nav>
+
+  <div class="account-content">
+    <section class="tab-panel" id="panel-overview" data-panel="overview">
+      <h1>Hello, {{ current_user.username }}</h1>
+      <div class="stat-row">
+        <div class="stat"><span class="stat-num">{{ my_tracks|length }}</span><span class="stat-label">Uploads</span></div>
+        <div class="stat"><span class="stat-num">{{ my_tracks|selectattr('status', 'equalto', 'approved')|list|length }}</span><span class="stat-label">Approved</span></div>
+        <div class="stat"><span class="stat-num">{{ my_tracks|selectattr('status', 'equalto', 'pending')|list|length }}</span><span class="stat-label">In review</span></div>
+      </div>
+      <p class="muted">Member since {{ current_user.created_at or "today" }} · signed in as <code>{{ current_user.username }}</code></p>
+      {% if current_user.is_admin %}<p class="admin-note">👑 This account has <strong>full admin</strong> rights.</p>{% endif %}
+    </section>
+
+    <section class="tab-panel" id="panel-music" data-panel="music" hidden>
+      <h1>Upload music</h1>
+      <p class="muted">MP3 only, max 50&nbsp;MB. Uploads enter the moderation queue and become public once an admin approves them.</p>
+      <form id="upload-form" class="upload-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Choose MP3 file">
+          <svg viewBox="0 0 24 24"><path d="M12 3l5 5h-3v6h-4V8H7zM5 19h14v2H5z"/></svg>
+          <strong>Drop your MP3 here</strong>
+          <span>or click to browse</span>
+          <input type="file" name="file" id="file-input" accept="audio/mpeg,.mp3" hidden>
+        </div>
+        <div class="progress" id="upload-progress" hidden>
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="form-grid">
+          <label>Title *
+            <input type="text" name="title" required maxlength="80" placeholder="Track title">
+          </label>
+          <label>Artist *
+            <input type="text" name="artist" required maxlength="60" placeholder="Artist name">
+          </label>
+          <label>Album
+            <input type="text" name="album" maxlength="80" placeholder="Optional">
+          </label>
+          <label>Genre
+            <input type="text" name="genre" maxlength="32" placeholder="Optional" list="genres">
+            <datalist id="genres">
+              <option value="Pop"></option><option value="Rock"></option>
+              <option value="Electronic"></option><option value="Hip-Hop"></option>
+              <option value="Jazz"></option><option value="Classical"></option>
+              <option value="Metal"></option><option value="Lo-fi"></option>
+            </datalist>
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" id="upload-btn">Submit for review</button>
+      </form>
+    </section>
+
+    <section class="tab-panel" id="panel-uploads" data-panel="uploads" hidden>
+      <h1>My uploads</h1>
+      {% if my_tracks %}
+      <table class="table">
+        <thead><tr><th>Title</th><th>Status</th><th>Size</th><th>Added</th><th></th></tr></thead>
+        <tbody>
+        {% for t in my_tracks %}
+          <tr>
+            <td>{{ t.title }} <span class="muted">— {{ t.artist }}</span></td>
+            <td><span class="chip chip-{{ t.status }}">{{ t.status }}</span></td>
+            <td>{{ (t.file_size / 1048576)|round(1) }} MB</td>
+            <td>{{ t.created_at }}</td>
+            <td>
+              {% if t.status == 'approved' %}
+              <button class="btn btn-small" data-play="{{ t.slug }}">Play</button>
+              {% endif %}
+              <form method="post" action="{{ url_for('music.delete_track', slug=t.slug) }}" class="inline" data-confirm="Delete this upload?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-small btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted">Nothing uploaded yet — head to the <a href="#music" data-goto-tab="music">Music tab</a> to add your first track.</p>
+      {% endif %}
+    </section>
+
+    <section class="tab-panel" id="panel-security" data-panel="security" hidden>
+      <h1>Security</h1>
+      <h3>Change password</h3>
+      <form id="password-form" class="stack">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label>Current password <input type="password" name="old_password" required></label>
+        <label>New password <input type="password" name="new_password" required minlength="8"></label>
+        <button class="btn" type="submit">Update password</button>
+      </form>
+      <h3>Active sessions</h3>
+      <table class="table">
+        <thead><tr><th>Signed in</th><th>IP</th><th>Device</th><th></th></tr></thead>
+        <tbody>
+        {% for s in sessions %}
+          <tr>
+            <td>{{ s.created_at }}</td>
+            <td>{{ s.ip or '—' }}</td>
+            <td>{{ s.user_agent[:40] if s.user_agent else '—' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('music.revoke_session', token_hash=s.token_hash) }}" class="inline" data-confirm="Revoke this session?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-small">Revoke</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <h3>Danger zone</h3>
+      <form method="post" action="{{ url_for('music.delete_account') }}" data-confirm="This permanently deletes your account and uploads. Type nothing — just confirm.">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="checkbox-label">
+          <input type="password" name="password" required placeholder="Confirm your password">
+        </label>
+        <button class="btn btn-danger" type="submit">Delete my account</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}
