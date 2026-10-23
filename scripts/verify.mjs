@@ -6,7 +6,9 @@ import { JSDOM } from 'jsdom';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
-const extDir = path.join(rootDir, 'extension');
+const extDir = rootDir;
+
+assert.ok(!fs.existsSync(path.join(rootDir, 'extension')), 'Extension must live directly at repo root (no extension/ subfolder)');
 
 console.log('=== 1. Verifying MV3 Manifest, DNR Rules, Asset Integrity & De-Zekoroization ===');
 
@@ -54,7 +56,7 @@ for (const m of cssUrlMatches) {
   if (!fs.existsSync(resolved)) missingCssAssets.push(relFromBundles);
 }
 assert.deepEqual(missingCssAssets, [], `Missing CSS assets: ${missingCssAssets.join(', ')}`);
-console.log(`  [OK] All ${cssUrlMatches.length} CSS asset URLs resolve to real files in extension/public/`);
+console.log(`  [OK] All ${cssUrlMatches.length} CSS asset URLs resolve to real files in public/`);
 
 function walkFiles(dir) {
   const out = [];
@@ -94,7 +96,7 @@ const popupHtml = fs.readFileSync(path.join(extDir, 'popup.html'), 'utf8');
 const popupJs = fs.readFileSync(path.join(extDir, 'popup.js'), 'utf8');
 assert.ok(popupHtml.includes('https://www.roblox.com/My/Account'), 'popup.html must link to /My/Account');
 assert.ok(!/<select\b|data-era|data-theme|rbx_classic_theme|rbx_classic_era/i.test(popupHtml + popupJs), 'popup must not contain theme/era controls');
-console.log('  [OK] extension/popup.html & popup.js verified (overlay toggle only; theme directed to /My/Account)');
+console.log('  [OK] popup.html & popup.js verified (overlay toggle only; theme directed to /My/Account)');
 
 console.log('\n=== 2. Verifying Create Route Exclusion ===');
 

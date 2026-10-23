@@ -775,7 +775,7 @@ a:hover .icon-moreinfo {
 
 .icon-play-big {
 	background-position: 0 -528px;
-	background-image: url('/img/generic-2019.svg');
+	background-image: url('/img/generic.svg');
 }
 
 .icon-play-big:hover {
@@ -784,7 +784,7 @@ a:hover .icon-moreinfo {
 
 .icon-pause-big {
 	background-position: 0 -576px;
-	background-image: url('/img/generic-2019.svg');
+	background-image: url('/img/generic.svg');
 }
 
 .icon-pause-big:hover {

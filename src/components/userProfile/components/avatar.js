@@ -148,7 +148,7 @@ const Avatar = props => {
     }, [thumbType, store.userAv3D, store.userId, userId]);
     
     useEffect(() => {
-        if (typeof THREE !== "undefined" && thumb3D.scene === null) {
+        if (thumb3D.scene === null) {
             thumb3D.Init(300);
         }
         return () => {

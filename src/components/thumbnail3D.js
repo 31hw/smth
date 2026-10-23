@@ -1,11 +1,31 @@
 import { getRbxCdnUrl } from '../services/thumbnails';
 import request from '../lib/request';
 
+let vendor3DPromise = null;
+export async function ensureVendor3DLoaded() {
+  if (typeof window === 'undefined') return false;
+  if (typeof window.THREE !== 'undefined' && window.THREE.OBJLoader) return true;
+  if (!vendor3DPromise) {
+    vendor3DPromise = (async () => {
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.getURL === 'function') {
+          await import(chrome.runtime.getURL('bundles/vendor-3d.js'));
+        }
+      } catch (err) {
+        console.warn('[Thumbnail3D] Could not lazy-load vendor-3d.js:', err);
+      }
+      return typeof window.THREE !== 'undefined';
+    })();
+  }
+  return vendor3DPromise;
+}
+
 export class Thumbnail3DHandler {
   thumbJson = null;
   canvasParent = null;
   isLoadingThumbnail = false;
   set3DReady = null;
+  defaultSize = 352;
 
   scene = null;
   renderer = null;
@@ -14,7 +34,8 @@ export class Thumbnail3DHandler {
   directionalLight = null;
   isStopping = false;
 
-  Init(size = 352) {
+  Init(size = this.defaultSize) {
+    this.defaultSize = size;
     if (typeof THREE === 'undefined') return false;
     try {
       this.scene = new THREE.Scene();
@@ -59,9 +80,10 @@ export class Thumbnail3DHandler {
   }
 
   async LoadThumbnail(thumbJson, canvasParent, set3DReady) {
-    if (typeof THREE === 'undefined' || !thumbJson || !canvasParent) return;
+    if (!thumbJson || !canvasParent) return;
+    if (!(await ensureVendor3DLoaded())) return;
     await this.Stop();
-    if (!this.scene) this.Init();
+    if (!this.scene) this.Init(this.defaultSize);
     if (!this.renderer || !this.scene) return;
     set3DReady(false);
     this.isLoadingThumbnail = true;

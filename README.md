@@ -1,51 +1,41 @@
 # Classic Roblox UI (2016 / 2019) — Microsoft Edge Extension
 
-A Manifest V3 **Microsoft Edge** browser extension that replaces modern `www.roblox.com` / `web.roblox.com` pages with the classic **2016 & 2019 Roblox UI** (sourced from [`Blue7366/ZekoroV2`](https://github.com/Blue7366/ZekoroV2) and [`RandomWood/economy-simulator`](https://github.com/RandomWood/economy-simulator)) while connecting directly to live `*.roblox.com` and `*.rbxcdn.com` endpoints.
+A lightweight Manifest V3 **Microsoft Edge** browser extension that replaces modern `www.roblox.com` / `web.roblox.com` pages with the classic **2016 & 2019 Roblox UI** (sourced from [`Blue7366/ZekoroV2`](https://github.com/Blue7366/ZekoroV2) and [`RandomWood/economy-simulator`](https://github.com/RandomWood/economy-simulator)) while calling live `*.roblox.com` and `*.rbxcdn.com` APIs directly.
 
-> **Pure Browser Extension:** There is no proxy server or sandbox backend. All requests use your real signed-in Roblox session on `roblox.com`.
+The repository root itself **is** the unpacked extension and contains all UI source (`src/`), assets (`public/`), and prebuilt bundles (`bundles/`).
 
 ---
 
-## Install in Microsoft Edge
-
-The `extension/` directory is already built and ready to load unpacked:
+## Load in Microsoft Edge
 
 1. Clone or download this repository.
-2. Open Microsoft Edge and navigate to **`edge://extensions`**.
-3. Enable **Developer mode** (toggle in the left sidebar or bottom-left).
-4. Click **Load unpacked** and select the **`extension`** folder inside this repository (`.../smth/extension`).
-5. Visit **`https://www.roblox.com/home`** — modern Roblox's HTML is removed and replaced with the classic UI.
+2. Open Microsoft Edge and go to **`edge://extensions`**.
+3. Turn on **Developer mode**.
+4. Click **Load unpacked** and select **this repository's root folder** (where `manifest.json` is located).
+5. Visit **`https://www.roblox.com/home`**.
 
 ---
 
-## Key Behavior
+## Features & Scope
 
-- **Combined 2016 + 2019 Classic Pages (45 Routes):**
-  - Home (`/home`), Public Landing (`/`), Login (`/login`), Download (`/download`)
-  - Games Discovery (`/games`) & Experience Details (`/games/:placeId/:name`) with live `roblox-player:` game launch via `auth.roblox.com/v1/authentication-ticket`
-  - Catalog (`/catalog`), Asset Details (`/catalog/:id/:name`, `/library/:id/:name`), Collectibles (`/collectibles`), Item Configuration (`/My/Item.aspx`)
-  - 3D/2D Avatar Editor (`/My/Avatar` & `/My/Character.aspx`)
-  - User Profiles (`/users/:id/profile`, `/User.aspx`), Friends (`/users/friends`, `/users/:id/friends`), Inventory (`/users/:id/inventory`), Favorites (`/users/:id/favorites`), User Search (`/search/users`)
-  - Groups (`/My/Groups.aspx`, `/Groups/:id/:name`, `/My/GroupAdmin.aspx`, `/Groups/Audit.aspx`, `/My/CreateGroup.aspx`, `/search/groups`)
-  - Messages (`/My/Messages`, `/messages/compose`), Money & Transactions (`/My/Money.aspx`, `/My/CurrencyExchange.aspx`), Trades (`/My/Trades.aspx`, `/Trade/TradeWindow.aspx`)
-  - Account Settings (`/My/Account`), Promo Codes (`/promocodes`), Membership (`/BuildersClub/Upgrade.ashx`), Badges (`/Badges.aspx`), Classic Archive Forums (`/Forum/*`), Report Abuse (`/internal/report-center`)
-- **Roblox Create Excluded:**
-  - `https://create.roblox.com/*` as well as `/create`, `/develop`, `/build`, `/places/*`, `/universes/*`, `/game-pass/*`, `/ide/*`, and `/my/createuserad.aspx` are **not** replaced and continue to use native Roblox Create.
-  - Appending `?rbx_native=1` to any URL temporarily bypasses the classic UI on that tab, or you can toggle the extension on/off from the Edge toolbar popup.
-- **Theme Configuration Only in Settings (`/My/Account`):**
-  - Theme (`Light`, `Dark (2019)`, `OBC Dark (2016)`), UI Era (`2019 Classic` vs `2016 Classic`), Page Styles (Avatar, Catalog, Game Details), Typography, Logo, and Accent Color are configured **exclusively** in **Settings (`/My/Account` -> Account Info -> Theme & Classic UI)**.
-  - Selecting a Light or Dark theme in `/My/Account` also syncs directly with your real Roblox account via `PATCH https://accountsettings.roblox.com/v1/themes/user`.
+- **45 Classic 2016 + 2019 Routes:** Home, Games, Experience Details (with native `roblox-player:` launch via `auth.roblox.com/v1/authentication-ticket`), Catalog, Asset Details, Collectibles, 3D/2D Avatar Editor, Profiles, Friends, Inventory, Favorites, Groups & Group Admin, Messages, Money & Transactions, Trades, Promo Codes, Membership, Badges, Archive Forums, and Account Settings.
+- **Optimized Footprint:**
+  - `bundles/content-ui.js` (`~862 KB`) + pruned `bundles/content-ui.css` (`~68 KB`) load on replaced pages.
+  - `bundles/vendor-3d.js` (`~555 KB`, tree-shaken Three.js r137 + Roblox OBJ/MTL loaders) is **lazy-loaded on demand** only when viewing a 3D avatar.
+  - `public/` (`~829 KB`) holds all classic fonts (`Gotham SSm`) and compressed 2016/2019 sprites & icons.
+- **Roblox Create Untouched:** `create.roblox.com` and `/create`, `/develop`, `/build`, `/places/*`, `/universes/*`, `/game-pass/*`, `/ide/*`, `/my/createuserad.aspx` are excluded and stay on native Roblox Create.
+- **Theme Changed Only in Settings (`/My/Account`):** Theme (`Light`, `Dark (2019)`, `OBC Dark (2016)`) and UI Era (`2019` / `2016`) are changed exclusively in **Account Settings (`/My/Account`)**, and sync Light/Dark directly with your Roblox account via `PATCH https://accountsettings.roblox.com/v1/themes/user`.
 
 ---
 
-## Building from Source (Optional)
+## Rebuild & Test (Optional)
 
-Prebuilt bundles are already included in `extension/bundles/`. If you modify files under `src/` or `scripts/`:
+Prebuilt bundles are already included in `bundles/`. If you edit `src/`:
 
 ```bash
 npm install
-npm run build   # Rebuilds extension/bundles/{vendor-3d.js,content-ui.js,content-ui.css}
-npm test        # Runs MV3 manifest, DNR, Create-exclusion, Settings sync & 45-route verification
+npm run build
+npm test
 ```
 
-After rebuilding, click **Reload** on the extension card in `edge://extensions`.
+> Tip: If you run `npm install` locally, `node_modules/` is created for building — remove `node_modules/` before loading unpacked in Edge (or load a clean clone) so Edge doesn't scan dev dependencies.

@@ -1,5 +1,5 @@
-import '../extension/public/fonts/gotham1.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import '../public/fonts/gotham1.css';
+import './styles/bootstrap-pruned.css';
 import './styles/globals.css';
 import './styles/helpers/textHelpers.css';
 import './styles/roblox/icons.css';

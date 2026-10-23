@@ -12,7 +12,7 @@ const useStyles = createUseStyles({
     flexDirection: 'column',
     backgroundColor: '#0d2231',
     backgroundImage:
-      "linear-gradient(rgba(5, 18, 30, 0.52), rgba(5, 18, 30, 0.68)), url('/img/landing/signupbackground.png')",
+      "linear-gradient(rgba(5, 18, 30, 0.52), rgba(5, 18, 30, 0.68)), url('/img/landing/signupbackground.webp')",
     backgroundRepeat: 'no-repeat',
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
