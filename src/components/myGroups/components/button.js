@@ -3,14 +3,14 @@ import { createUseStyles } from "react-jss";
 const useStyles = createUseStyles({
   buttonWrapper: {},
   button: {
-    border: '1px solid #666',
-    background: 'linear-gradient(0deg, rgba(197,197,197,1) 0%, rgba(255,255,255,1) 100%)',
+    border: '1px solid var(--text-color-quinary)',
+    background: 'var(--legacy-btn-gradient)',
     display: 'block',
     textAlign: 'center',
-    color: '#000',
+    color: 'var(--text-color-primary)',
     '&:hover': {
-      color: '#000',
-      background: 'rgba(197,197,197,1)',
+      color: 'var(--text-color-primary)',
+      background: 'var(--legacy-btn-gradient-hover)',
     }
   },
 });

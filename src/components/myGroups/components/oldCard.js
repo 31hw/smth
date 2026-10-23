@@ -2,9 +2,9 @@ import { createUseStyles } from "react-jss";
 
 const useStyles = createUseStyles({
   card: {
-    background: '#e6e6e6',
+    background: 'var(--surface-panel)',
     padding: '4px',
-    border: '1px solid #b2b2b2',
+    border: '1px solid var(--text-color-quinary)',
   },
 });
 

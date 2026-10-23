@@ -30,8 +30,8 @@
 .chatMenuBody {
     height: 300px;
     background: var(--white-color);
-    border-left: 1px solid #ececec;
-    border-right: 1px solid #ececec;
+    border-left: 1px solid var(--border-subtle);
+    border-right: 1px solid var(--border-subtle);
     overflow-y: auto;
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
@@ -60,7 +60,7 @@
 }
 
 .chatMessageHistory {
-    background: #f1f1f1;
+    background: var(--surface-subtle);
     height: 261px;
     overflow-y: auto;
 }
@@ -70,10 +70,12 @@
     bottom: 0;
     width: 249px;
     border: none;
+    background: var(--input-bg);
+    color: var(--text-color-primary);
     padding-bottom: 10px;
     padding-top: 10px;
     padding-left: 10px;
-    border-top: 1px solid #e1e1e1;
+    border-top: 1px solid var(--border-subtle);
 }
 
 .chatMessageBox:focus-visible {

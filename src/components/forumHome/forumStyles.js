@@ -16,9 +16,9 @@ const useForumStyles = createUseStyles({
     }
   },
   bodyRow: {
-    background: '#f9f9f9',
+    background: 'var(--surface-subtle)',
     '&:hover': {
-      background: '#e9e9e9',
+      background: 'var(--surface-hover)',
     },
   },
   lastPostHeader: {

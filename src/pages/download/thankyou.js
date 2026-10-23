@@ -12,7 +12,7 @@ const useStyles = createUseStyles({
     container: {
         minHeight: 400,
         margin: "30px auto",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--white-color)",
         marginLeft: 175,
         "@media(max-width: 970px)": {
             marginLeft: 0,

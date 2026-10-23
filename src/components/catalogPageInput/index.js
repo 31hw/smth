@@ -7,12 +7,16 @@ const useInputStyles = createUseStyles({
   input: {
     width: '100%',
     padding: '2px',
-    border: '1px solid #a7a7a7',
+    border: '1px solid var(--text-color-quinary)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color-primary)',
   },
   select: {
     width: '100%',
     padding: '2px',
-    border: '1px solid #a7a7a7',
+    border: '1px solid var(--text-color-quinary)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color-primary)',
     paddingLeft: '2px',
     appearance: 'none',
   },
@@ -26,10 +30,11 @@ const useInputStyles = createUseStyles({
     fontSize: '8px',
     transform: 'rotate(90deg)',
     marginTop: '6px',
-    border: '1px solid black',
+    border: '1px solid var(--text-color-quinary)',
+    color: 'var(--text-color-primary)',
     paddingLeft: '3px',
     paddingRight: '1px',
-    background: 'linear-gradient(90deg, rgba(224,224,224,1) 0%, rgba(255,255,255,1) 100%)',
+    background: 'var(--legacy-btn-gradient)',
   },
 })
 

@@ -23,7 +23,7 @@ const useStyles = createUseStyles({
     width: '150px',
   },
   postRow: {
-    background: '#f9f9f9',
+    background: 'var(--surface-subtle)',
     borderBottom: '1px solid var(--text-color-quinary)',
   },
   userStat: {

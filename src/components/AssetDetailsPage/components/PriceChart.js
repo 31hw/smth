@@ -46,7 +46,7 @@ function PriceChart({ isLabelHidden = false }) {
     useEffect(() => {
         if (!store.details || !store.resaleData) return;
         let currency = store.details?.priceTickets ? CurrencyType.Tickets : CurrencyType.Robux;
-        let originalPrice = store.details?.priceTickets || store.details?.price || 0;
+        let originalPrice = store.details?.priceTickets || store.details?.price || store.resaleData?.originalPrice || 0;
         let avgPrice = store.resaleData.recentAveragePrice;
         setPrices({
             originalPriceCurrency: currency,

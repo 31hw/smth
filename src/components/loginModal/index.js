@@ -14,7 +14,7 @@ const useLoginModalStyles = createUseStyles({
   },
   card: {
     width: '320px',
-    background: 'white',
+    background: 'var(--white-color)',
     paddingTop: '20px',
     paddingBottom: '20px',
     paddingLeft: '20px',

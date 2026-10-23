@@ -15,7 +15,10 @@ import AssetDetailsModalStore from "../AssetDetailsPage/stores/AssetDetailsModal
 import { catalogPageStyle, getCatalogPageStyle } from "../../services/theme";
 import SharedAssetPage from "../sharedAssetPage";
 
-const getUrlForAssetType = ({ assetTypeId, assetId, name, forceGame = false }) => {
+const getUrlForAssetType = ({ assetTypeId, assetId, name, itemType = 'Asset', forceGame = false }) => {
+    if (itemType === 'Bundle') {
+        return getItemUrl({ assetId, name, itemType: 'Bundle' });
+    }
     if (forceGame || assetTypeId === 9) {
         // Place
         return getGameUrl({
@@ -30,8 +33,16 @@ const getUrlForAssetType = ({ assetTypeId, assetId, name, forceGame = false }) =
         });
     }
     // Anything else
-    return getItemUrl({ assetId: assetId, name: name });
+    return getItemUrl({ assetId: assetId, name: name, itemType, assetType: assetTypeId });
 }
+
+const detectRequestedItemType = () => {
+    if (typeof window === 'undefined') return 'Asset';
+    const p = window.location.pathname || '';
+    if (/\/bundles\/\d+/i.test(p)) return 'Bundle';
+    if (/\/game-pass\/\d+/i.test(p)) return 'GamePass';
+    return 'Asset';
+};
 
 /**
  * @param {string} idParamName
@@ -94,7 +105,8 @@ const AssetPage = ({ idParamName, nameParamName = "" }) => {
                 return;
             }
 
-            const newDetails = await getItemDetailsNew([assetId]);
+            const reqType = detectRequestedItemType();
+            const newDetails = await getItemDetailsNew([{ id: assetId, itemType: reqType }]);
             if (newDetails?.length > 0) {
                 setDetails(newDetails[0]);
                 
@@ -102,6 +114,7 @@ const AssetPage = ({ idParamName, nameParamName = "" }) => {
                     assetTypeId: newDetails[0].assetType,
                     assetId: newDetails[0].id,
                     name: newDetails[0].name,
+                    itemType: newDetails[0].itemType,
                     forceGame: forceGameRoute,
                 });
                 if (typeof window !== 'undefined' && window.location.pathname !== expectedUrl) {

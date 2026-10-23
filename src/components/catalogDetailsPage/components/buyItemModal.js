@@ -108,7 +108,7 @@ const ModalButtons = props => {
         <div className='col-6 pe-0 offset-1'>
           <ActionButton className={s.buyButton} label='Purchase ROBUX' onClick={() => {
             modalStore.closePurchaseModal();
-            window.location.href = '/'
+            window.location.href = '/upgrades/robux';
           }}/>
         </div>
         <div className='col-4'>
@@ -139,7 +139,7 @@ const ModalImage = (props) => {
     case 'PURCHASE':
     case 'PURCHASE_PENDING':
     case 'PURCHASE_OK':
-      return <ItemImage id={store.details.id}/>
+      return <ItemImage id={store.details.id} itemType={store.details.itemType} assetType={store.details.assetType}/>
     case 'INSUFFICIENT_FUNDS':
     case 'PURCHASE_ERROR':
       // TODO: yellow triangle icon
@@ -181,9 +181,9 @@ export const useModalStyles = createUseStyles({
   modalWrapper: {
     width: '400px',
     height: '250px',
-    backgroundColor: '#e1e1e1',
+    backgroundColor: 'var(--surface-panel)',
     margin: '0 auto',
-    border: '1px solid #a3a3a3',
+    border: '1px solid var(--text-color-quinary)',
     marginTop: 'calc(50vh - 125px)',
   },
   title: {
@@ -194,10 +194,10 @@ export const useModalStyles = createUseStyles({
   },
   innerSection: {
     padding: '4px 8px',
-    background: 'white',
+    background: 'var(--white-color)',
     width: '100%',
     height: '205px',
-    border: '4px solid #e1e1e1',
+    border: '4px solid var(--surface-panel)',
   },
   footerText: {
     textAlign: 'center',

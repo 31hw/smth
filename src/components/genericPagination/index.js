@@ -3,12 +3,12 @@ import CatalogPageStore from "../../stores/catalogPage";
 
 const useStyles = createUseStyles({
   button: {
-    color: '#777777',
+    color: 'var(--text-color-secondary)',
     fontSize: '15px',
-    border: '1px solid #777777',
-    background: 'linear-gradient(0deg, rgba(224,224,224,1) 0%, rgba(255,255,255,1) 100%)',
+    border: '1px solid var(--text-color-quinary)',
+    background: 'var(--legacy-btn-gradient)',
     '&:hover': {
-      background: 'linear-gradient(0deg, rgba(203,216,255,1) 0%, rgba(255,255,255,1) 100%)',
+      background: 'var(--legacy-btn-gradient-hover)',
     },
     margin: '0 auto',
     display: 'block',

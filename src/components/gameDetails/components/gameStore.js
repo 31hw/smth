@@ -185,13 +185,13 @@ const useStyles = createUseStyles({
 const GamePassEntry = ({ id, name, price, isOwned }) => {
   const s = useStyles();
   const buttonStyles = useButtonStyles();
-  const url = getItemUrl({assetId: id, name});
+  const url = getItemUrl({assetId: id, name, itemType: 'GamePass'});
   
   return <div className={s.gPassWrapper}>
     <div className={`section-content hoverShadow ${s.gPassContainer}`}>
       <Link href={url}>
         <a href={url}>
-          <ItemImage className={s.gPassImg} id={id} name={name}/>
+          <ItemImage className={s.gPassImg} id={id} name={name} itemType="GamePass"/>
         </a>
       </Link>
       <div className={s.gPassDetails}>
@@ -238,7 +238,7 @@ const GameStore = props => {
     setPasses(0);
     getUniverseGamePasses({universeId: store.universeDetails.id, unfiltered: false}).then(d => {
       try { // accounts for d being null if for whatever rerason it is
-        d = d.filter(pass => pass.price >= 2).filter(pass => pass.isForSale === true);
+        d = (d || []).filter(pass => typeof pass.price === 'number' && pass.price >= 0 && pass.isForSale !== false);
         if (d.length === 0) {
           setPasses(1);
           return;

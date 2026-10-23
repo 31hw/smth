@@ -23,19 +23,37 @@ const CREATE_PATH_PREFIXES = [
   '/build',
   '/places/',
   '/universes/',
-  '/game-pass/',
+  '/game-pass/configure',
   '/ide/',
   '/my/createuserad.aspx',
 ];
 
-// Native Roblox endpoints/flows we should never hijack as UI pages
+// Native Roblox endpoints/flows we should never hijack as UI pages (including native Upgrade / Plus / Robux pages)
 const NATIVE_PASSTHROUGH_PREFIXES = [
   '/games/start',
   '/game/placelauncher',
   '/game/join',
   '/login/negotiate',
-  '/upgrades/paymentmethods',
+  '/upgrade',
+  '/upgrades',
+  '/premium',
 ];
+
+export function isNativePassthroughRoute(urlOrPath) {
+  if (!urlOrPath || typeof urlOrPath !== 'string') return false;
+  try {
+    if (/^https?:\/\//i.test(urlOrPath)) {
+      const u = new URL(urlOrPath);
+      const p = stripLocalePrefix(u.pathname).toLowerCase();
+      return NATIVE_PASSTHROUGH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + '/'));
+    }
+  } catch (_) {
+    // ignore malformed URL
+  }
+  const pathOnly = urlOrPath.split('?')[0].split('#')[0];
+  const p = stripLocalePrefix(pathOnly).toLowerCase();
+  return NATIVE_PASSTHROUGH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + '/'));
+}
 
 export function isCreateRoute(urlOrPath) {
   if (!urlOrPath || typeof urlOrPath !== 'string') return false;
@@ -90,7 +108,7 @@ const ROUTE_DEFS = [
 
   // Catalog & Marketplace
   { key: '/catalog', regex: /^\/(?:catalog|marketplace)$/i, params: [] },
-  { key: '/catalog/[assetId]/[name]', regex: /^\/(?:catalog|bundles)\/(\d+)(?:\/([^/?#]*))?$/i, params: ['assetId', 'name'] },
+  { key: '/catalog/[assetId]/[name]', regex: /^\/(?:catalog|bundles|game-pass)\/(\d+)(?:\/([^/?#]*))?$/i, params: ['assetId', 'name'] },
   { key: '/library/[assetId]/[name]', regex: /^\/(?:library|marketplace\/asset)\/(\d+)(?:\/([^/?#]*))?$/i, params: ['assetId', 'name'] },
 
   // Users
@@ -128,7 +146,7 @@ const ROUTE_DEFS = [
   { key: '/Badges.aspx', regex: /^\/badges(?:\.aspx)?(?:\/(\d+)(?:\/([^/?#]*))?)?$/i, params: ['badgeId', 'name'] },
   { key: '/collectibles', regex: /^\/(?:collectibles|internal\/collectibles)$/i, params: [] },
   { key: '/promocodes', regex: /^\/(?:promocodes|redeem)$/i, params: [] },
-  { key: '/BuildersClub/Upgrade.ashx', regex: /^\/(?:buildersclub\/upgrade\.ashx|premium\/membership|upgrades\/robux|internal\/membership)$/i, params: [] },
+  { key: '/BuildersClub/Upgrade.ashx', regex: /^\/(?:buildersclub\/upgrade\.ashx|internal\/membership)$/i, params: [] },
   { key: '/internal/report-center', regex: /^\/(?:internal\/report-center|abusereport(?:\/.*)?)$/i, params: [] },
 
   // Forums

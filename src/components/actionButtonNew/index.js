@@ -26,8 +26,8 @@ const useBuyButtonStyles = createUseStyles({
   },
   wrapper: {
     width: '100%',
-    border: '1px solid #a7a7a7',
-    background: '#e1e1e1',
+    border: '1px solid var(--text-color-quinary)',
+    background: 'var(--surface-panel)',
   },
   wrapper2:{
     display: 'flex',

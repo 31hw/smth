@@ -27,7 +27,7 @@ const useAvCardStyles = createUseStyles({
         height: "100%",
         flexDirection: "column",
         display: "flex",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--white-color)",
         position: "relative",
         boxShadow: "0 1px 4px 0 rgba(25,25,25,0.3)",
         borderRadius: 3,
@@ -44,7 +44,7 @@ const useAvCardStyles = createUseStyles({
         aspectRatio: "1 / 1",
         borderTopLeftRadius: 3,
         borderTopRightRadius: 3,
-        borderBottom: "1px solid #e3e3e3",
+        borderBottom: "1px solid var(--border-subtle)",
         position: "relative",
         "& img": {
             width: "100%",

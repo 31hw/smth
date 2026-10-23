@@ -11,7 +11,7 @@ const useStyles = createUseStyles({
     margin: '0 auto',
   },
   link: {
-    color: '#000',
+    color: 'var(--text-color-primary)',
   },
 });
 

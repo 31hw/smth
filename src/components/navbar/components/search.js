@@ -36,14 +36,14 @@ const useSuggestionEntryStyles = createUseStyles({
     paddingBottom: '0.45rem',
     marginBottom: 0,
     fontWeight: 400,
-    color: 'rgb(52, 52, 52)',
+    color: 'var(--text-color-primary)',
     '&:hover': {
       boxShadow: '4px 0 0 0 var(--primary-color) inset',
-      background: '#f5f5f5',
+      background: 'var(--surface-hover)',
     },
   },
   link: {
-    color: 'rgb(52, 52, 52)',
+    color: 'var(--text-color-primary)',
     textDecoration: 'none',
   },
 });
@@ -68,11 +68,11 @@ const SearchSuggestionEntry = ({ url, query, mode, external, onSelect }) => {
 
 const useSuggestionStyles = createUseStyles({
   container: {
-    background: 'white',
+    background: 'var(--white-color)',
     position: 'fixed',
     zIndex: 1200,
     boxShadow: '0 -5px 20px rgb(25 25 25 / 15%)',
-    border: '1px solid rgba(0,0,0,0.15)',
+    border: '1px solid var(--text-color-quinary)',
     borderRadius: '3px',
     width: 'inherit',
     marginTop: '1px',
@@ -102,9 +102,9 @@ const SearchSuggestionContainer = ({ query, inputRef, onClose }) => {
 const useSearchStyles = createUseStyles({
   wrapper: {
     padding: 0,
-    background: 'white',
+    background: 'var(--input-bg)',
     borderRadius: '3px',
-    border: '1px solid rgba(0,0,0,0.15)',
+    border: '1px solid var(--text-color-quinary)',
     width: '100%',
     height: '28px!important',
   },
@@ -116,7 +116,7 @@ const useSearchStyles = createUseStyles({
     marginTop: '2px',
     float: 'left',
     background: 'none',
-    color: '#191919',
+    color: 'var(--text-color-primary)',
     fontWeight: '400',
     display: 'block',
     lineHeight: '1.5',

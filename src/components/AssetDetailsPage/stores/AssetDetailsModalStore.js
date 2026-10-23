@@ -54,9 +54,12 @@ const AssetDetailsModalStore = createContainer(() => {
             return;
         }
         setPurchaseInfo(purchInfo);
-        setNewBalance((purchInfo.currency === CurrencyType.Tickets ? auth.tix : auth.robux) - purchInfo.expectedPrice);
-        setPurchaseState(newBalance < 0 ? PurchaseState.InsufficientFunds : PurchaseState.Purchasable);
-    }, [isBuyModalOpen, buyingUIAD]);
+        const computedBalance =
+            (purchInfo.currency === CurrencyType.Tickets ? auth.tix : auth.robux) -
+            (purchInfo.expectedPrice || 0);
+        setNewBalance(computedBalance);
+        setPurchaseState(computedBalance < 0 ? PurchaseState.InsufficientFunds : PurchaseState.Purchasable);
+    }, [isBuyModalOpen, buyingUIAD, auth.robux, auth.tix, store.details, store.resellers]);
     
     useEffect(async () => {
         if (delistingUAID === 0 || isDelisting) return;
@@ -84,7 +87,13 @@ const AssetDetailsModalStore = createContainer(() => {
             assetId: purchaseInfo.assetId,
             productId: purchaseInfo.productId,
             sellerId: purchaseInfo.sellerId,
+            sellerType: purchaseInfo.sellerType,
+            purchaserId: auth.userId,
             userAssetId: purchaseInfo.userAssetId,
+            collectibleItemId: purchaseInfo.collectibleItemId,
+            collectibleProductId: purchaseInfo.collectibleProductId,
+            collectibleItemInstanceId: purchaseInfo.collectibleItemInstanceId,
+            isGamePass: purchaseInfo.isGamePass,
             price: purchaseInfo.expectedPrice,
             expectedCurrency: purchaseInfo.currency,
         });

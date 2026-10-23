@@ -5,14 +5,14 @@ const useStyles = createUseStyles({
     pillToggle: {
         height: 24,
         display: "inline-block",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--white-color)",
         padding: 2,
         borderRadius: "24px",
         "& input": {
             display: "none",
         },
         "& label": {
-            color: "rgb(117, 117, 117)",
+            color: "var(--text-color-secondary)",
             userSelect: "none",
             minWidth: 36,
             textAlign: "center",

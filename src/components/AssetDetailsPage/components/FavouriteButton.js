@@ -64,7 +64,7 @@ const useStyles = createUseStyles({
  * @returns {JSX.Element}
  * @constructor
  */
-const FavouriteButton = ({ assetId, initFavCount, id }) => {
+const FavouriteButton = ({ assetId, initFavCount, itemType = 'Asset', id }) => {
     const auth = authentication.useContainer();
     const s = useStyles();
     
@@ -88,8 +88,8 @@ const FavouriteButton = ({ assetId, initFavCount, id }) => {
     useEffect(() => {
         if (
             deb.current ||
-            lastOpt.current.assetId === assetId ||
-            lastOpt.current.initFavCount === initFavCount
+            (lastOpt.current.assetId === assetId &&
+                lastOpt.current.initFavCount === initFavCount)
         ) return;
         deb.current = true;
         lastOpt.current = {
@@ -101,15 +101,14 @@ const FavouriteButton = ({ assetId, initFavCount, id }) => {
         setLocked(false);
         
         if (auth.userId) {
-            getIsFavorited({ assetId, userId: auth.userId }).then(data => {
+            getIsFavorited({ assetId, userId: auth.userId, itemType }).then(data => {
                 setIsFavorited(!!data);
             }).catch(() => {
-                // undefined/null response causes axios to incorrectly return network error :)
                 setIsFavorited(false);
             })
         }
-        setTimeout(() => deb.current = false, 1000);
-    }, [initFavCount, assetId, auth.userId]);
+        setTimeout(() => deb.current = false, 200);
+    }, [initFavCount, assetId, itemType, auth.userId]);
     
     return <div className={s.favoriteContainer} id={!id ? undefined : id}>
         <a className={`${s.favoriteButton}`} href="#" onClick={e => {
@@ -119,11 +118,11 @@ const FavouriteButton = ({ assetId, initFavCount, id }) => {
             setIsFavorited(!isFavorited);
             setFavoriteCount(isFavorited ? favoriteCount - 1 : favoriteCount + 1);
             if (isFavorited) {
-                deleteFavorite({ userId: auth.userId, assetId }).finally(() => {
+                deleteFavorite({ userId: auth.userId, assetId, itemType }).finally(() => {
                     setLocked(false);
                 })
             } else {
-                createFavorite({ userId: auth.userId, assetId }).finally(() => {
+                createFavorite({ userId: auth.userId, assetId, itemType }).finally(() => {
                     setLocked(false);
                 })
             }

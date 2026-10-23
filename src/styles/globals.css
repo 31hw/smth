@@ -24,6 +24,14 @@
 
     --background-color: #e3e3e3;
     --background-color-legacy: #fff;
+    --surface-subtle: #f2f2f2;
+    --surface-hover: #eaeaea;
+    --surface-selected: #e0f1fc;
+    --surface-panel: #e1e1e1;
+    --input-bg: #ffffff;
+    --border-subtle: #e3e3e3;
+    --legacy-btn-gradient: linear-gradient(0deg, rgba(224,224,224,1) 0%, rgba(255,255,255,1) 100%);
+    --legacy-btn-gradient-hover: linear-gradient(0deg, rgba(203,216,255,1) 0%, rgba(255,255,255,1) 100%);
 
     --success-gradient: linear-gradient(0deg, rgba(0,113,0,1) 0%, rgba(64,193,64,1) 100%);
     --success-gradient-hover: linear-gradient(0deg, rgba(71,232,71,1) 0%, rgba(71,232,71,1) 100%);
@@ -123,8 +131,8 @@ a {
 }
 
 .section-content-off {
-    background-color: var(--text-color-secondary);
-    color: var(--text-color-tertiary);
+    background-color: var(--surface-subtle);
+    color: var(--text-color-secondary);
     padding: 15px;
     text-align: center;
     font-size: 16px;
@@ -135,7 +143,7 @@ a {
 .text-danger-new {
     padding: 5px 10px;
     border: 1px solid #C00;
-    background-color: #FAE5E5;
+    background-color: rgba(204, 0, 0, 0.12);
     color: var(--text-color-primary);
     line-height: 1.428;
     font-size: 14px;
@@ -143,24 +151,24 @@ a {
 }
 
 input.form-control::placeholder {
-    color: var(--white-color);
+    color: var(--text-color-secondary);
 }
 
 .divider-right {
-    border-right: 1px solid #c3c3c3;
+    border-right: 1px solid var(--text-color-quinary);
 }
 
 .divider-top {
-    border-top: 1px solid #c3c3c3;
+    border-top: 1px solid var(--text-color-quinary);
 }
 .divider-bottom {
-    border-bottom: 1px solid #c3c3c3;
+    border-bottom: 1px solid var(--text-color-quinary);
 }
 .divider-top-thick {
-    border-top: 2px solid #c3c3c3;
+    border-top: 2px solid var(--text-color-quinary);
 }
 .divider-light {
-    border-color: #ebebeb;
+    border-color: var(--border-subtle);
 }
 html a,
 p > a,
@@ -200,10 +208,10 @@ a.nav-link:focus, a.nav-link:hover {
 }
 
 a.normal {
-    color: #000;
+    color: var(--text-color-primary);
 }
 a.normal:hover {
-    color: #0055b3;
+    color: var(--primary-color);
 }
 
 html {
@@ -303,7 +311,7 @@ html div.container.big {
     background-color: #d86868;
     border: 0;
     text-align: center;
-    color: var(--white-color);
+    color: #fff;
     padding: 15px;
 }
 
@@ -311,7 +319,7 @@ html div.container.big {
     background-color: var(--success-color);
     border: 0;
     text-align: center;
-    color: var(--white-color);
+    color: #fff;
     padding: 15px;
     height: 48px;
 }
@@ -384,24 +392,24 @@ html div.container.big {
 
 .status-confirm, .status-error {
     padding: 5px 10px;
-    color: #343434;
+    color: var(--text-color-primary);
     font-size: 14px;
     line-height: 1.428;
 }
 
 .status-confirm {
-    background-color: #e5effa;
+    background-color: rgba(0, 102, 204, 0.14);
     border: 1px solid #06C;
 }
 
 .status-error {
-    background-color: #FAE5E5;
+    background-color: rgba(204, 0, 0, 0.14);
     border: 1px solid #C00;
 }
 
 .inputTextStyle {
-    border: 1px solid #b8b8b8;
-    color: #191919;
+    border: 1px solid var(--text-color-quinary);
+    color: var(--text-color-primary);
     font-weight: 300;
     font-size: 16px;
     height: 38px;
@@ -410,7 +418,7 @@ html div.container.big {
     -webkit-appearance: none;
     display: block;
     width: 100%;
-    background-color: #fff;
+    background-color: var(--input-bg);
     background-image: none;
     border-radius: 3px;
     outline: none;
@@ -474,3 +482,115 @@ html div.container.big {
     border: none!important;
     line-height: 0!important;
 }
+
+/* Complete Dark Mode overrides (dark2019 & obc2016) so zero white Bootstrap/classic surfaces remain */
+html[data-bs-theme="dark"] {
+    --bs-body-color: var(--text-color-primary);
+    --bs-body-bg: var(--background-color);
+    --bs-border-color: var(--text-color-quinary);
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.14);
+    --bs-secondary-bg: var(--surface-subtle);
+    --bs-tertiary-bg: var(--white-color);
+    color-scheme: dark;
+}
+
+html[data-bs-theme="dark"] .card {
+    --bs-card-bg: var(--white-color);
+    --bs-card-color: var(--text-color-primary);
+    --bs-card-border-color: var(--text-color-quinary);
+    --bs-card-cap-bg: var(--surface-subtle);
+    --bs-card-cap-color: var(--text-color-primary);
+    background-color: var(--white-color);
+    color: var(--text-color-primary);
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] .bg-white,
+html[data-bs-theme="dark"] .bg-light {
+    background-color: var(--white-color) !important;
+    color: var(--text-color-primary) !important;
+}
+
+html[data-bs-theme="dark"] .text-dark,
+html[data-bs-theme="dark"] .text-black {
+    color: var(--text-color-primary) !important;
+}
+
+html[data-bs-theme="dark"] .form-control,
+html[data-bs-theme="dark"] .form-select,
+html[data-bs-theme="dark"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="range"]),
+html[data-bs-theme="dark"] select,
+html[data-bs-theme="dark"] textarea {
+    background-color: var(--input-bg);
+    color: var(--text-color-primary);
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] .form-control:focus,
+html[data-bs-theme="dark"] .form-select:focus {
+    background-color: var(--input-bg);
+    color: var(--text-color-primary);
+    border-color: var(--primary-color);
+}
+
+html[data-bs-theme="dark"] .dropdown-menu {
+    background-color: var(--white-color);
+    color: var(--text-color-primary);
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] .dropdown-item {
+    color: var(--text-color-primary);
+}
+
+html[data-bs-theme="dark"] .dropdown-item:hover,
+html[data-bs-theme="dark"] .dropdown-item:focus {
+    background-color: var(--surface-hover);
+    color: var(--text-color-primary);
+}
+
+html[data-bs-theme="dark"] .modal-content {
+    background-color: var(--white-color);
+    color: var(--text-color-primary);
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] .table {
+    --bs-table-bg: var(--white-color);
+    --bs-table-color: var(--text-color-primary);
+    --bs-table-border-color: var(--text-color-quinary);
+    --bs-table-striped-bg: var(--surface-subtle);
+    --bs-table-striped-color: var(--text-color-primary);
+    --bs-table-hover-bg: var(--surface-hover);
+    --bs-table-hover-color: var(--text-color-primary);
+    color: var(--text-color-primary);
+}
+
+html[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--white-color);
+    color: var(--text-color-primary);
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] .page-link {
+    background-color: var(--white-color);
+    color: var(--text-color-primary);
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] .nav-tabs {
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] .nav-tabs .nav-link.active {
+    background-color: var(--white-color);
+    color: var(--text-color-primary);
+    border-color: var(--text-color-quinary);
+}
+
+html[data-bs-theme="dark"] html a,
+html[data-bs-theme="dark"] p > a,
+html[data-bs-theme="dark"] .fake-link {
+    color: var(--primary-color);
+}
+

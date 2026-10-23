@@ -8,15 +8,21 @@ function normalizeInventoryLimit(limit) {
   return valid.reduce((prev, curr) => (Math.abs(curr - n) < Math.abs(prev - n) ? curr : prev), 25);
 }
 
-export const getOwnedCopies = async ({ assetId, userId }) => {
+export const getOwnedCopies = async ({ assetId, userId, itemType = 'Asset', assetType = null }) => {
   if (!userId || !assetId) return [];
+  const typeSegment =
+    itemType === 'Bundle'
+      ? 'Bundle'
+      : Number(assetType) === 34 || itemType === 'GamePass'
+      ? 'GamePass'
+      : 'Asset';
   try {
     const res = await request(
       'GET',
-      getFullUrl('inventory', `/v1/users/${userId}/items/Asset/${assetId}`)
+      getFullUrl('inventory', `/v1/users/${userId}/items/${typeSegment}/${assetId}`)
     );
     return (res?.data?.data || []).map((v) => ({
-      userAssetId: v.instanceId || v.userAssetId,
+      userAssetId: v.instanceId || v.userAssetId || v.id || assetId,
       seller: null,
       price: null,
       serialNumber: v.serialNumber || null,
@@ -26,12 +32,18 @@ export const getOwnedCopies = async ({ assetId, userId }) => {
   }
 };
 
-export const userOwnsItem = async ({ userId, assetId }) => {
+export const userOwnsItem = async ({ userId, assetId, itemType = 'Asset', assetType = null }) => {
   if (!userId || !assetId) return false;
+  const typeEnum =
+    itemType === 'Bundle'
+      ? 3
+      : Number(assetType) === 34 || itemType === 'GamePass'
+      ? 1
+      : 0;
   try {
     const res = await request(
       'GET',
-      getFullUrl('inventory', `/v1/users/${userId}/items/0/${assetId}/is-owned`)
+      getFullUrl('inventory', `/v1/users/${userId}/items/${typeEnum}/${assetId}/is-owned`)
     );
     return Boolean(res?.data);
   } catch (_) {

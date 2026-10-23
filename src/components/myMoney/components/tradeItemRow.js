@@ -17,7 +17,7 @@ const useTradeItemStyles = createUseStyles({
     transform: 'scale(1.3)',
     height: '125px',
     zIndex: 200,
-    background: 'white',
+    background: 'var(--white-color)',
     marginBottom: '-50px',
   },
   itemName: {

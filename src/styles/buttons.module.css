@@ -1,14 +1,14 @@
 .legacyButton {
     font-size: 15px;
-    border: 1px solid #444444;
-    color: #000;
+    border: 1px solid var(--text-color-quinary);
+    color: var(--text-color-primary);
     /*width: 100%;*/
-    background: linear-gradient(0deg, rgba(224,224,224,1) 0%, rgba(255,255,255,1) 100%);
+    background: var(--legacy-btn-gradient);
 }
 
 .legacyButton:hover {
-    background: linear-gradient(0deg, rgba(203,216,255,1) 0%, rgba(255,255,255,1) 100%);
-    color: #000;
+    background: var(--legacy-btn-gradient-hover);
+    color: var(--text-color-primary);
 }
 
 .delete {

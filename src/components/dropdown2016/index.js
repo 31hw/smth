@@ -14,7 +14,7 @@ const useStyles = createUseStyles({
     },
     dropdown: {
         width: '125px',
-        background: 'white',
+        background: 'var(--white-color)',
         position: 'absolute',
         right: '-20px',
         borderRadius: '2px',
@@ -22,14 +22,14 @@ const useStyles = createUseStyles({
     dropdownEntry: {
         width: '100%',
         '&:hover': {
-            background: 'var(--white-color)',
+            background: 'var(--surface-hover)',
         },
     },
     dropdownText: {
         marginBottom: 0,
         fontSize: '16px',
         padding: '8px 10px',
-        color: 'rgb(33, 37, 41)',
+        color: 'var(--text-color-primary)',
     },
     dropdownDots: {
         letterSpacing: '3px',

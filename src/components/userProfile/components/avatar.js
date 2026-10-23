@@ -25,12 +25,12 @@ const useAvatarStyles = createUseStyles({
         background: '#0074bd',
         height: '100%',
         borderRadius: 0,
-        border: '1px solid #d4d4d4 !important',
+        border: '1px solid var(--text-color-quinary) !important',
     },
     avatarImageCard: {
         borderRadius: 0,
-        border: '1px solid #d4d4d4',
-        background: '#ffffff',
+        border: '1px solid var(--text-color-quinary)',
+        background: 'var(--white-color)',
         position: "relative",
         minHeight: 300,
     },
@@ -38,8 +38,8 @@ const useAvatarStyles = createUseStyles({
         rowGap: 8,
     },
     assetTile: {
-        background: '#ffffff',
-        border: '1px solid #d4d4d4',
+        background: 'var(--white-color)',
+        border: '1px solid var(--text-color-quinary)',
     },
     pagination: {
         textAlign: 'center',

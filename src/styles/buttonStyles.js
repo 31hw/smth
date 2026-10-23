@@ -151,7 +151,7 @@ const useButtonStyles = createUseStyles({
         lineHeight: '100%',
     },
     newCancelButton: {
-        background: '#fff',
+        background: 'var(--white-color)',
         border: '1px solid var(--text-color-secondary)',
         borderColor: 'var(--text-color-secondary)!important',
         borderRadius: '3px',
@@ -169,19 +169,19 @@ const useButtonStyles = createUseStyles({
         transition: "box-shadow 200ms ease-in-out",
         "-webkit-transition": "box-shadow 200ms ease-in-out",
         '&:hover': {
-            background: '#fff',
-            color: '#000',
+            background: 'var(--surface-hover)',
+            color: 'var(--text-color-primary)',
             cursor: 'pointer',
             boxShadow: '0 1px 3px rgb(150 150 150 / 74%)'
         },
         '&:visited': {
-            color: 'rgba(0,0,0,.6)'
+            color: 'var(--text-color-primary)'
         }
     },
     newDisabledCancelButton: {
         '&, &:hover, &:visited': {
             opacity: '.5',
-            backgroundColor: '#fff',
+            backgroundColor: 'var(--white-color)',
             borderColor: 'var(--text-color-secondary)!important',
             color: 'var(--text-color-secondary)!important',
             cursor: 'not-allowed',

@@ -156,7 +156,7 @@ const useStyles = createUseStyles({
             fontSize: 20,
             fontWeight: 700,
             paddingBottom: 5,
-            color: p => p.theme === themeType.obc2016 ? "var(--white-color)" : undefined,
+            color: "var(--text-color-primary)",
         },
     },
     recommendationsList: {

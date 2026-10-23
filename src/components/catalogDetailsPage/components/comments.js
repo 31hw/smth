@@ -13,8 +13,9 @@ import getFlag from "../../../lib/getFlag";
 const useCreateCommentStyles = createUseStyles({
   createCommentTextArea: {
     width: '100%',
-    background: '#ecf4ff',
-    border: '2px solid #dee1ec',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color-primary)',
+    border: '2px solid var(--text-color-quinary)',
     borderRadius: '4px',
     '&:focus-visible': {
       outline: 'none',
@@ -99,8 +100,8 @@ const useCommentEntryStyles = createUseStyles({
   commentEntryDiv: {
     height: '120px',
     width: '100%',
-    background: '#f6f6f5',
-    border: '2px solid #e6e6e6',
+    background: 'var(--surface-subtle)',
+    border: '2px solid var(--border-subtle)',
     borderRadius: '4px',
   },
   commentText: {

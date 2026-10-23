@@ -276,7 +276,7 @@ const useGroupStyles = createUseStyles({
     paddingBottom: 0,
   },
   buttonNotInUse: {
-    background: 'white !important',
+    background: 'var(--white-color) !important',
     border: '1px solid var(--text-color-quinary)',
     paddingTop: 0,
     paddingBottom: 0,

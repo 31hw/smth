@@ -203,7 +203,7 @@ const PublicLanding = () => {
       .finally(() => setBusy(false));
   };
 
-  const logoSrc = era === '2016' ? '/img/roblox_logo.svg' : '/img/roblox_2019_light.svg';
+  const logoSrc = era === '2016' ? '/img/roblox_logo.svg' : '/img/roblox_2019_logo.png';
 
   return (
     <div className={s.page}>
@@ -216,9 +216,7 @@ const PublicLanding = () => {
             <a href="/games">Games</a>
             <a href="/catalog">Catalog</a>
             <a href="/Forum/Default.aspx">Forums</a>
-            <a href="/BuildersClub/Upgrade.ashx">
-              {era === '2016' ? 'Builders Club' : 'Membership'}
-            </a>
+            <a href="/premium/membership">Upgrade</a>
           </div>
         </div>
         <form className={s.loginBar} onSubmit={handleLogin}>

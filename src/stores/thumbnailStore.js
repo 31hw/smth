@@ -1,6 +1,13 @@
 import {createContainer} from "unstated-next";
 import {useReducer, useRef, useState} from "react";
-import {multiGetAssetThumbnails, multiGetGroupIcons, multiGetUniverseIcons, multiGetUserThumbnails} from "../services/thumbnails";
+import {
+  multiGetAssetThumbnails,
+  multiGetBundleThumbnails,
+  multiGetGamePassIcons,
+  multiGetGroupIcons,
+  multiGetUniverseIcons,
+  multiGetUserThumbnails,
+} from "../services/thumbnails";
 
 const getKey = (id, type, size) => {
   return type + '_' + id + '_' + size;
@@ -75,6 +82,16 @@ const ThumbnailStore = createContainer(() => {
     getAndProcessThumbnails('asset', (items) => {
       return multiGetAssetThumbnails({
         assetIds: items.map(v => v.id),
+      });
+    });
+    getAndProcessThumbnails('bundle', (items) => {
+      return multiGetBundleThumbnails({
+        bundleIds: items.map(v => v.id),
+      });
+    });
+    getAndProcessThumbnails('gamePass', (items) => {
+      return multiGetGamePassIcons({
+        gamePassIds: items.map(v => v.id),
       });
     });
     getAndProcessThumbnails('universe', (items) => {
@@ -159,6 +176,8 @@ const ThumbnailStore = createContainer(() => {
 
     getUserThumbnail: getThumbnailHandler('userThumbnail'),
     getAssetThumbnail: getThumbnailHandler('asset'),
+    getBundleThumbnail: getThumbnailHandler('bundle'),
+    getGamePassThumbnail: getThumbnailHandler('gamePass'),
     getGroupIcon: getThumbnailHandler('groupIcon'),
     getGameIcon: getThumbnailHandler('universe'),
     removeUserThumbnail: getThumbnailRemovalHandler('userThumbnail'),

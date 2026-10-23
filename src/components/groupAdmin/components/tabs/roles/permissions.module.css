@@ -1,4 +1,4 @@
 .accordian {
-    background: #eaeaea;
+    background: var(--surface-subtle);
     padding: 5px;
 }

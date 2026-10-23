@@ -7,9 +7,9 @@ import TradeWindowStore from "../stores/tradeWindowStore";
 
 const useStyles = createUseStyles({
   offerRequestCard: {
-    background: '#e1e1e1',
+    background: 'var(--surface-panel)',
     width: '100%',
-    border: '1px solid #d0d0d0',
+    border: '1px solid var(--text-color-quinary)',
     borderRadius: '2px',
     padding: '8px 6px',
   },

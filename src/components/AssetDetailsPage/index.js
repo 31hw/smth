@@ -102,7 +102,7 @@ const useStyles = createUseStyles({
     },
     itemHeaderContainer: {
         paddingBottom: 12,
-        borderBottom: "1px solid #e3e3e3",
+        borderBottom: "1px solid var(--border-subtle)",
         position: "relative",
         "& h2": {
             fontSize: 32,
@@ -314,7 +314,7 @@ const useStyles = createUseStyles({
     },
     saleClockContainer: {
         fontSize: 14,
-        color: "#191919",
+        color: "var(--text-color-primary)",
         textAlign: "center",
         fontWeight: 300,
         lineHeight: '1.4em',
@@ -324,7 +324,7 @@ const useStyles = createUseStyles({
     },
     saleClock: {
         fontSize: 14,
-        color: "#191919",
+        color: "var(--text-color-primary)",
         textAlign: "center",
         fontWeight: 300,
         lineHeight: '1.4em',
@@ -341,7 +341,7 @@ const useStyles = createUseStyles({
     },
     offsaleLabel: {
         width: "calc(100% - 180px)!important",
-        color: "#191919",
+        color: "var(--text-color-primary)",
         fontWeight: 400,
         lineHeight: "1.4em",
         fontSize: 16,
@@ -356,7 +356,7 @@ const useStyles = createUseStyles({
     },
     availableInventoryLabel: {
         width: "calc(100% - 180px)!important",
-        color: "#191919",
+        color: "var(--text-color-primary)",
         fontWeight: 500,
         lineHeight: "1.4em",
         fontSize: 16,
@@ -557,18 +557,24 @@ function AssetDetailsPage({ itemDetails }) {
             },
             {
                 label: "Type",
-                field: getTypeStrFromTypeNum(itemDetails.assetType),
+                field: itemDetails.itemType === 'Bundle' ? 'Bundle' : getTypeStrFromTypeNum(itemDetails.assetType),
             },
             {
                 label: "Sales",
-                field: formatNum(store.details?.Sales ?? itemDetails.saleCount ?? 0),
+                field: formatNum(store.details?.Sales ?? itemDetails.saleCount ?? store.resaleData?.sales ?? 0),
             },
-            {
+            itemDetails.totalQuantity > 0 ? {
+                label: "Remaining",
+                field: `${formatNum(itemDetails.unitsAvailableForConsumption ?? 0)} / ${formatNum(itemDetails.totalQuantity)}`,
+            } : null,
+            (store.details?.Created || itemDetails.createdAt) ? {
                 label: "Created",
-                field: (store.details?.Created || itemDetails.createdAt)
-                    ? dayjs(store.details?.Created || itemDetails.createdAt).format('M/D/YYYY')
-                    : 'N/A',
-            },
+                field: dayjs(store.details?.Created || itemDetails.createdAt).format('M/D/YYYY'),
+            } : null,
+            (store.details?.Updated || itemDetails.updatedAt) ? {
+                label: "Updated",
+                field: dayjs(store.details?.Updated || itemDetails.updatedAt).format('M/D/YYYY'),
+            } : null,
             {
                 label: "Genres",
                 field: <div>
@@ -616,7 +622,7 @@ function AssetDetailsPage({ itemDetails }) {
                 parentClass: `invis767`,
             }
         ].filter(d => !!d));
-    }, [itemDetails, store.details, store.resellers, store.isOwned]);
+    }, [itemDetails, store.details, store.resellers, store.resaleData, store.isOwned]);
     
     if (!itemDetails || !store.details) {
         return <span className="spinner" style={{ height: "100%", backgroundSize: "auto 36px" }}/>
@@ -626,7 +632,7 @@ function AssetDetailsPage({ itemDetails }) {
         className={`${s.itemThumbContainer} flex flex-column ${!isVisible ? "invisible-1" : null}`}>
         <div
             className={`w-fit-content position-relative ${s.itemThumb} ${itemDetails.assetType === AssetType.Badge || itemDetails.assetType === AssetType.GamePass ? s.smallImg : ""}`}>
-            <ItemImage name={itemDetails.name} id={itemDetails.id} className={`${s.img}`}/>
+            <ItemImage name={itemDetails.name} id={itemDetails.id} itemType={itemDetails.itemType} assetType={itemDetails.assetType} className={`${s.img}`}/>
             <div className={s.itemStatusContainer}>
                 {
                     isNew
@@ -678,7 +684,7 @@ function AssetDetailsPage({ itemDetails }) {
         </div>
         <div className={`${s.itemInteractionContainer} ${isWindow767 ? "display-none" : ""}`}>
             <div id="desktopInteractionContainer" className={`flex ${s.favBtnContainer}`}>
-                <FavouriteButton assetId={itemDetails.id} initFavCount={itemDetails.favoriteCount}/>
+                <FavouriteButton assetId={itemDetails.id} itemType={itemDetails.itemType} initFavCount={itemDetails.favoriteCount}/>
             </div>
         </div>
     </div>
@@ -754,7 +760,7 @@ function AssetDetailsPage({ itemDetails }) {
                     }
                     <div className={`${s.itemInteractionContainer} ${!isWindow767 ? "display-none" : ""}`}>
                         <div id="mobileInteractionContainer" className={`flex ${s.favBtnContainer}`}>
-                            <FavouriteButton assetId={itemDetails.id} initFavCount={itemDetails.favoriteCount}/>
+                            <FavouriteButton assetId={itemDetails.id} itemType={itemDetails.itemType} initFavCount={itemDetails.favoriteCount}/>
                         </div>
                     </div>
                     {

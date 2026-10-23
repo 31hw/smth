@@ -24,7 +24,7 @@ const useStyles = createUseStyles({
     paddingTop: '20px',
     paddingBottom: '20px',
     '&:hover': {
-      background: '#e1e1e1',
+      background: 'var(--surface-hover)',
       cursor: 'pointer',
     },
   },

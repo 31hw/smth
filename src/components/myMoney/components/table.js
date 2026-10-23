@@ -10,9 +10,9 @@ const useStyles = createUseStyles({
     width: '100%',
   },
   tableHead: {
-    borderTop: '1px solid #b9b9b9',
+    borderTop: '1px solid var(--text-color-quinary)',
     borderBottom: '2px solid var(--background-color)',
-    background: '#f1f1f1',
+    background: 'var(--surface-subtle)',
   },
   tableHeadLabel: {
     paddingTop: '5px',
@@ -28,7 +28,7 @@ const useStyles = createUseStyles({
   },
   feedbackWrapper: {
     border: '2px solid #839ec3',
-    background: '#e6eefa',
+    background: 'var(--surface-selected)',
     padding: '8px',
     marginBottom: '10px',
   },

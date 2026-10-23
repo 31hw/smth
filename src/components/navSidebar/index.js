@@ -13,8 +13,8 @@ const useNavSideBarStyles = createUseStyles({
     top: '2px',
     left: '8px',
     zIndex: 1101,
-    width: '42px',
-    height: '42px',
+    width: '38px',
+    height: '38px',
     border: '0',
     borderRadius: 0,
     background: 'transparent',
@@ -22,15 +22,8 @@ const useNavSideBarStyles = createUseStyles({
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    color: (p) => (p.era === '2019' && p.theme === themeType.light ? '#393b3d' : '#fff'),
-    fontSize: '30px',
-    lineHeight: 1,
+    filter: (p) => (p.era === '2019' && p.theme === themeType.light ? 'invert(0.8)' : 'none'),
     padding: 0,
-    '@media(max-width: 991px)': {
-      width: '40px',
-      height: '40px',
-      fontSize: '28px',
-    },
   },
   container: {
     position: 'fixed',
@@ -145,7 +138,7 @@ const NavSideBar = () => {
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle side navigation"
         >
-          <span aria-hidden="true">☰</span>
+          <span className="icon-nav-menu" />
         </button>
       )}
       {isOpen && (
@@ -217,7 +210,7 @@ const NavSideBar = () => {
               url="/promocodes"
               icon="icon-nav-blog"
             />
-            <a href="/BuildersClub/Upgrade.ashx" style={{ textDecoration: 'none' }}>
+            <a href="/premium/membership" style={{ textDecoration: 'none' }}>
               <p className={s.upgradeNowButton}>Upgrade Now</p>
             </a>
           </div>

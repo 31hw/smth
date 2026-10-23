@@ -40,7 +40,7 @@
       '/build',
       '/places/',
       '/universes/',
-      '/game-pass/',
+      '/game-pass/configure',
       '/ide/',
       '/my/createuserad.aspx',
     ];
@@ -56,7 +56,9 @@
       '/game/placelauncher',
       '/game/join',
       '/login/negotiate',
-      '/upgrades/paymentmethods',
+      '/upgrade',
+      '/upgrades',
+      '/premium',
     ];
     for (const prefix of passthrough) {
       if (p === prefix || p.startsWith(prefix + '/')) return false;

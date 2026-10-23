@@ -33,7 +33,7 @@ const useStyles = createUseStyles({
   },
   creatorDetailsCard: {
     position: 'absolute',
-    background: 'white',
+    background: 'var(--white-color)',
     marginLeft: '-7px',
     boxShadow: '0 3px 4px 0 rgb(25 25 25 / 30%)',
   },

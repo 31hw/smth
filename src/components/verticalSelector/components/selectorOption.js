@@ -4,15 +4,15 @@ import Link from "../../link";
 const useStyles = createUseStyles({
   wrapper: {
     width: '100%',
-    color: '#000',
+    color: 'var(--text-color-primary)',
     display: 'block',
     padding: '5px 10px',
     '@media(max-width: 767px)': {
       padding: '6px 8px',
     },
     '&:hover': {
-      background: '#efefef',
-      color: '#000',
+      background: 'var(--surface-hover)',
+      color: 'var(--text-color-primary)',
     },
   },
   wrapperSelected: {
@@ -20,7 +20,7 @@ const useStyles = createUseStyles({
     borderTop: '1px solid var(--text-color-secondary)',
     borderBottom: '1px solid var(--text-color-secondary)',
 
-    backgroundColor: '#efefef',
+    backgroundColor: 'var(--surface-subtle)',
     '@media(max-width: 767px)': {
       borderLeft: 'none',
       borderRight: 'none',

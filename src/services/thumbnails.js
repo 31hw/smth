@@ -218,6 +218,43 @@ export const multiGetAssetThumbnails = ({ assetIds, size = '420x420' }) => {
   ).then((b) => b.flat());
 };
 
+export const multiGetBundleThumbnails = ({ bundleIds, size = '420x420' }) => {
+  const cleanIds = [...new Set((bundleIds || []).filter(Boolean))];
+  if (!cleanIds.length) return Promise.resolve([]);
+  const safeSize = normalizeSize(size, ['150x150', '420x420'], '420x420');
+  return Promise.all(
+    chunk(cleanIds, 100).map((batch) =>
+      request(
+        'GET',
+        getFullUrl(
+          'thumbnails',
+          `/v1/bundles/thumbnails?bundleIds=${toCsv(batch)}&format=Png&size=${safeSize}&isCircular=false`
+        )
+      )
+        .then((d) => addBaseUrl(d?.data?.data || []))
+        .catch(() => [])
+    )
+  ).then((b) => b.flat());
+};
+
+export const multiGetGamePassIcons = ({ gamePassIds }) => {
+  const cleanIds = [...new Set((gamePassIds || []).filter(Boolean))];
+  if (!cleanIds.length) return Promise.resolve([]);
+  return Promise.all(
+    chunk(cleanIds, 100).map((batch) =>
+      request(
+        'GET',
+        getFullUrl(
+          'thumbnails',
+          `/v1/game-passes?gamePassIds=${toCsv(batch)}&format=Png&size=150x150&isCircular=false`
+        )
+      )
+        .then((d) => addBaseUrl(d?.data?.data || []))
+        .catch(() => [])
+    )
+  ).then((b) => b.flat());
+};
+
 export const multiGetUniverseIcons2 = ({ universeIds }) => {
   return multiGetUniverseIcons({ universeIds, size: '420x420' });
 };

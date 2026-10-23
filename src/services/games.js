@@ -613,7 +613,12 @@ export const getGamePassRootPlace = async ({ assetId }) => {
   const uniArr = await multiGetUniverseDetails({ universeIds: [universeId] });
   const uni = uniArr?.[0];
   if (uni?.rootPlaceId) {
-    return { id: uni.rootPlaceId, name: uni.name };
+    return {
+      id: uni.rootPlaceId,
+      rootPlaceId: uni.rootPlaceId,
+      universeId,
+      name: uni.name,
+    };
   }
   return null;
 };
@@ -626,16 +631,20 @@ export const getUniverseGamePasses = async ({ universeId }) => {
     );
     const passes = res?.data?.gamePasses || res?.data?.data || [];
     if (Array.isArray(passes)) {
-      return passes.map((p) => ({
-        id: p.id,
-        name: p.name || p.displayName,
-        displayName: p.displayName || p.name,
-        productId: p.productId || p.id,
-        price: p.price ?? p.marketPlaceFees?.price ?? null,
-        sellerName: p.sellerName || '',
-        sellerId: p.sellerId || null,
-        isOwned: Boolean(p.isOwned),
-      }));
+      return passes.map((p) => {
+        const price = p.price ?? p.marketPlaceFees?.price ?? null;
+        return {
+          id: p.id,
+          name: p.name || p.displayName,
+          displayName: p.displayName || p.name,
+          productId: p.productId || p.id,
+          price,
+          isForSale: typeof p.isForSale === 'boolean' ? p.isForSale : typeof price === 'number' && price >= 0,
+          sellerName: p.sellerName || '',
+          sellerId: p.sellerId || null,
+          isOwned: Boolean(p.isOwned),
+        };
+      });
     }
   } catch (_) {
     // fallback to legacy games endpoint

@@ -91,6 +91,7 @@ const LoggedInArea = () => {
   const s = useLoginAreaStyles({ light2019 });
   const authStore = AuthenticationStore.useContainer();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [robuxOpen, setRobuxOpen] = useState(false);
 
   const formatCompactCurrency = (value) => {
     const amount = Number(value || 0);
@@ -104,13 +105,41 @@ const LoggedInArea = () => {
       <div className={`${s.row} row`}>
         <ul className={s.linkContainer}>
           <li className={`${s.currencyContainer} ${s.robuxContainer}`}>
-            <a className={s.currencyLink} href="/My/Money.aspx">
+            <a
+              className={s.currencyLink}
+              href="/My/Money.aspx"
+              onClick={(e) => {
+                e.preventDefault();
+                setSettingsOpen(false);
+                setRobuxOpen(!robuxOpen);
+              }}
+            >
               <span className={`${s.currencyIcon} icon-nav-robux`} />
               <span className={s.currencySpan}>
                 {authStore.robux === null ? '?' : formatCompactCurrency(authStore.robux)}
               </span>
             </a>
           </li>
+          {robuxOpen && (
+            <Dropdown2016
+              dropdownClass={s.dropdownClass}
+              onlyDropdown={true}
+              options={[
+                {
+                  name: `${Number(authStore.robux || 0).toLocaleString()} Robux`,
+                  url: '/My/Money.aspx',
+                },
+                {
+                  name: 'Buy Robux',
+                  url: '/upgrades/robux',
+                },
+                {
+                  name: 'My Transactions',
+                  url: '/My/Money.aspx',
+                },
+              ]}
+            />
+          )}
           {getFlag('showTicketBalace', false) && authStore.tix !== null ? (
             <li className={s.currencyContainer}>
               <a className={s.currencyLink} href="/My/Money.aspx">
@@ -124,6 +153,7 @@ const LoggedInArea = () => {
               href="/My/Account"
               onClick={(e) => {
                 e.preventDefault();
+                setRobuxOpen(false);
                 setSettingsOpen(!settingsOpen);
               }}
             >

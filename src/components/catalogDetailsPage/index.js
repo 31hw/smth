@@ -92,12 +92,21 @@ const CatalogDetails = props => {
   }, [props]);
 
   useEffect(() => {
-    if (!authStore.userId || !store.details) return;
-    
-    store.loadOwnedCopies(authStore.userId);
+    if (!store.details) return;
     if (store.isResellable) {
       store.loadResellers();
     }
+    if (details.assetType === 34) {
+      getGamePassRootPlace({ assetId: details.id }).then(setGamePassPlace);
+    }
+    if (details.assetType === 21) {
+      getBadgeInfoByID({ badgeId: details.id }).then(setBadgeInfo);
+    }
+    if (!authStore.userId) {
+      store.setOwnedCopies([]);
+      return;
+    }
+    store.loadOwnedCopies(authStore.userId);
     getCollections({
       userId: authStore.userId,
     }).then(col => {
@@ -106,14 +115,7 @@ const CatalogDetails = props => {
         return Number.isFinite(id) && id === Number(store.details.id);
       });
       store.setInCollection(inCollection !== undefined);
-    })
-    
-    if (details.assetType === 34) {
-      getGamePassRootPlace({ assetId: details.id }).then(setGamePassPlace);
-    }
-    if (details.assetType === 21) {
-      getBadgeInfoByID({ badgeId: details.id }).then(setBadgeInfo);
-    }
+    });
   }, [store.details, authStore.userId]);
 
   const hasItemToDeList = store.isResellable && store.allResellers && store.allResellers.find(v => v.seller.id === authStore.userId) !== undefined;
@@ -208,7 +210,7 @@ const CatalogDetails = props => {
           <div className='col-12'>
             <div className='row'>
               <div className='col-12 col-md-6 col-lg-5'>
-                <ItemImage id={details.id} name={details.name}/>
+                <ItemImage id={details.id} name={details.name} itemType={details.itemType} assetType={details.assetType}/>
                 {store.details.assetType === 3 ? <AudioPlayButton audioId={details.id} /> : null}
                 {isLimitedUnique && <LimitedUniqueOverlay/> || isLimited && <LimitedOverlay/> || null}
                 {
@@ -239,12 +241,14 @@ const CatalogDetails = props => {
               </div>
               <div className='col-12 col-md-6 col-lg-4'>
                 <CreatorDetails
-                    //gamePassPlace={gamePassPlace}
                     id={details.creatorTargetId}
                     name={details.creatorName}
                     type={details.creatorType}
                     createdAt={details.createdAt}
                     updatedAt={details.updatedAt}
+                    favoriteCount={details.favoriteCount}
+                    totalQuantity={details.totalQuantity}
+                    remaining={details.unitsAvailableForConsumption}
                     owned={store.ownedCopies && store.ownedCopies.length > 0}
                 />
                 <p className={s.description}>{filterTextForEmpty(details.description)}</p>

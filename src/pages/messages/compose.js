@@ -18,7 +18,9 @@ const useStyles = createUseStyles({
     padding: '5px 10px',
   },
   textArea: {
-    background: '#eaeaea',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color-primary)',
+    border: '1px solid var(--text-color-quinary)',
   },
   sendWrapper: {
     width: '100px',

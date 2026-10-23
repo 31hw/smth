@@ -1,21 +1,18 @@
 import { createUseStyles } from 'react-jss';
 import { getEra, getLogoStyle, getTheme, logoStyle, themeType } from '../../../services/theme';
 
-function resolveDesktopLogo(era, theme, style) {
+function resolveDesktopLogo(era, style) {
   if (style === logoStyle.Roblox2016 || era === '2016') {
     return '/img/roblox_logo.svg';
   }
-  if (theme === themeType.dark2019 || theme === themeType.obc2016) {
-    return '/img/roblox_2019_light.svg';
-  }
-  return '/img/roblox_2019_dark.svg';
+  return '/img/roblox_2019_logo.png';
 }
 
 function resolveMobileLogo(era, style) {
   if (style === logoStyle.Roblox2016 || era === '2016') {
     return 'url(/img/logo_R.svg)';
   }
-  return 'url(/img/roblox_2019_tilt.svg)';
+  return 'url(/img/roblox_2019_tilt.png)';
 }
 
 const useLogoStyles = createUseStyles({
@@ -31,10 +28,17 @@ const useLogoStyles = createUseStyles({
     alignItems: 'center',
   },
   imgDesktopImage: {
-    width: '122px',
-    height: '30px',
+    width: '118px',
+    height: '28px',
     objectFit: 'contain',
     display: 'block',
+    filter: (p) =>
+      p.era !== '2016' &&
+      p.logo !== logoStyle.Roblox2016 &&
+      p.theme !== themeType.dark2019 &&
+      p.theme !== themeType.obc2016
+        ? 'brightness(0) opacity(0.82)'
+        : 'none',
   },
   imgMobile: {
     backgroundImage: (p) => resolveMobileLogo(p.era, p.logo),
@@ -45,6 +49,13 @@ const useLogoStyles = createUseStyles({
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'center',
     marginLeft: '6px',
+    filter: (p) =>
+      p.era !== '2016' &&
+      p.logo !== logoStyle.Roblox2016 &&
+      p.theme !== themeType.dark2019 &&
+      p.theme !== themeType.obc2016
+        ? 'brightness(0.45)'
+        : 'none',
     '@media(min-width: 1325px)': {
       display: 'none',
     },
@@ -73,7 +84,7 @@ const Logo = () => {
   const theme = getTheme();
   const logo = getLogoStyle();
   const s = useLogoStyles({ era, theme, logo });
-  const desktopLogoSrc = resolveDesktopLogo(era, theme, logo);
+  const desktopLogoSrc = resolveDesktopLogo(era, logo);
 
   return (
     <div className={`${s.col} col-3 col-lg-3`}>

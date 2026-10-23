@@ -37,7 +37,7 @@ const useStyles = createUseStyles({
     // 9e9e9e
   },
   count: {
-    background: '#e0f1fc',
+    background: 'var(--surface-selected)',
     border: '1px solid #84a5c9',
     paddingLeft: '4px',
     paddingRight: '4px',

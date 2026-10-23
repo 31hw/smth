@@ -6,16 +6,16 @@ const useStyles = createUseStyles({
   box: {
     width: '40px',
     float: 'right',
-    border: '1px solid #777777',
-    background: 'linear-gradient(0deg, rgba(224,224,224,1) 0%, rgba(255,255,255,1) 100%)',
+    border: '1px solid var(--text-color-quinary)',
+    background: 'var(--legacy-btn-gradient)',
     '&:hover': {
-      background: 'linear-gradient(0deg, rgba(203,216,255,1) 0%, rgba(255,255,255,1) 100%)',
+      background: 'var(--legacy-btn-gradient-hover)',
     },
     cursor: 'pointer',
     userSelect: 'none',
   },
   boxOpen: {
-    background: 'rgb(224,224,224)',
+    background: 'var(--surface-panel)',
   },
   gear: {
     backgroundImage: `url("/img/Unofficial/settings-gear.png")`,
@@ -43,21 +43,21 @@ const useStyles = createUseStyles({
   caret: {
   },
   boxDropdown: {
-    background: 'rgb(224,224,224)',
+    background: 'var(--surface-panel)',
     position: 'absolute',
     width: '100px',
     top: '24px',
     right: '-13px',
-    border: '1px solid #777777',
+    border: '1px solid var(--text-color-quinary)',
     zIndex: 99,
   },
   boxDropdownEntry: {
     fontSize: '12px',
     padding: '3px 6px',
     '&:hover': {
-      background: '#d8d8d8',
+      background: 'var(--surface-hover)',
     },
-    color: 'black',
+    color: 'var(--text-color-primary)',
     fontFamily: 'Arial,Helvetica,sans-serif',
   },
   container: {

@@ -39,8 +39,8 @@ const BestPriceEntry = props => {
 const useBuyButtonStyles = createUseStyles({
   wrapper: {
     width: '100%',
-    border: '1px solid #a7a7a7',
-    background: '#e1e1e1',
+    border: '1px solid var(--text-color-quinary)',
+    background: 'var(--surface-panel)',
   }
 });
 
@@ -53,8 +53,12 @@ const PrivateSellersCount = props => {
 
 const useSaleCountStyles = createUseStyles({
   text: {
-    color: '#666',
+    color: 'var(--text-color-secondary)',
     fontSize: '12px',
+  },
+  countNum: {
+    color: 'var(--text-color-primary)',
+    fontWeight: 600,
   },
   actionButton: {
     padding: '1px 13px 3px 13px',
@@ -65,7 +69,7 @@ const SaleCount = props => {
   const store = CatalogDetailsPage.useContainer();
   const s = useSaleCountStyles();
   return <p className={'mt-2 mb-2 text-center ' + s.text}>
-    ( <span className='text-black'>{store.saleCount}</span> Sold)
+    ( <span className={s.countNum}>{(store.saleCount ?? 0).toLocaleString()}</span> Sold)
   </p>
 }
 
@@ -74,7 +78,7 @@ const OwnedCount = props => {
   const s = useSaleCountStyles();
   if (!store.ownedCopies || store.ownedCopies.length === 0) return null;
   return <p className={'mt-2 mb-0 text-center ' + s.text}>
-    ( <span className='text-black'>{store.ownedCopies.length}</span> Owned)
+    ( <span className={s.countNum}>{store.ownedCopies.length}</span> Owned)
   </p>
 }
 
@@ -158,7 +162,7 @@ const useOrTabStyles = createUseStyles({
     textAlign: 'center',
   },
   labelBg: {
-    background: '#e1e1e1',
+    background: 'var(--surface-panel)',
     position: 'relative',
     bottom: '-10px',
   },
@@ -185,14 +189,14 @@ const BuyButton = props => {
   const showBuyButton = (() => {
     if (isResellAsset) return true;
 
-    if (store.details.priceTickets) {
-      if (store.details.price === null) {
+    if (typeof store.details.priceTickets === 'number') {
+      if (store.details.price === null || typeof store.details.price === 'undefined') {
         return false;
       }
     }
     return true;
   })();
-  const showBuyTicketsButton = store.details.priceTickets !== null && !isResellAsset;
+  const showBuyTicketsButton = typeof store.details.priceTickets === 'number' && !isResellAsset;
   const showOrTab = !isResellAsset && showBuyButton && showBuyTicketsButton;
   const hasOffsaleLabel = store.offsaleDeadline !== null && !isResellAsset && (showBuyButton || showBuyTicketsButton);
 

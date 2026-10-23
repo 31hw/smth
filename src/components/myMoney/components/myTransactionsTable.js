@@ -69,7 +69,7 @@ const useSellerStyles = createUseStyles({
     marginLeft: '4px',
     float: 'left',
     marginTop: '7px',
-    color: '#000',
+    color: 'var(--text-color-primary)',
   },
 });
 

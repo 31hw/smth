@@ -10,7 +10,7 @@ import { getTheme, themeType } from "../../services/theme";
 
 const useStyles = createUseStyles({
   currentTime: {
-    color: p => p.theme === themeType.obc2016 ? "var(--white-color)" : undefined,
+    color: "var(--text-color-primary)",
   },
 });
 

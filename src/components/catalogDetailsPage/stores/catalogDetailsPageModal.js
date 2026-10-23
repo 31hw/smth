@@ -50,7 +50,12 @@ const CatalogDetailsPageModal = createContainer(() => {
           assetId: purchaseDetails.assetId,
           productId: purchaseDetails.productId,
           sellerId: purchaseDetails.sellerId,
+          sellerType: purchaseDetails.sellerType,
           userAssetId: purchaseDetails.userAssetId,
+          collectibleItemId: purchaseDetails.collectibleItemId,
+          collectibleProductId: purchaseDetails.collectibleProductId,
+          collectibleItemInstanceId: purchaseDetails.collectibleItemInstanceId,
+          isGamePass: purchaseDetails.isGamePass,
           price: currency === 1 ? purchaseDetails.price : purchaseDetails.priceTickets,
           expectedCurrency: currency,
         });

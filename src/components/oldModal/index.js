@@ -13,9 +13,9 @@ const useStyles = createUseStyles({
   modalWrapper: {
     width: '400px',
     height: '250px',
-    backgroundColor: '#e1e1e1',
+    backgroundColor: 'var(--surface-panel)',
     margin: '0 auto',
-    border: '1px solid #a3a3a3',
+    border: '1px solid var(--text-color-quinary)',
     marginTop: 'calc(50vh - 125px)',
   },
   title: {
@@ -26,10 +26,10 @@ const useStyles = createUseStyles({
   },
   innerSection: {
     padding: '4px 8px',
-    background: 'white',
+    background: 'var(--white-color)',
     width: '100%',
     height: '205px',
-    border: '4px solid #e1e1e1',
+    border: '4px solid var(--surface-panel)',
   },
   footerText: {
     textAlign: 'center',

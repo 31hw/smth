@@ -95,13 +95,21 @@ const CatalogPageStore = createContainer(() => {
         if (!Array.isArray(response.data) || response.data.length === 0) {
           return { data: { data: [] } };
         }
-        return getItemDetails(response.data.map((v) => v.id));
+        return getItemDetails(
+          response.data.map((v) => ({
+            id: v.id,
+            itemType: v.itemType || 'Asset',
+          }))
+        );
       })
       .then((assetDetails) => {
         const detailList = assetDetails?.data?.data || [];
         const arr = [];
         for (const item of response?.data || []) {
-          const details = detailList.find((v) => v.id === item.id);
+          const itemType = item.itemType || 'Asset';
+          const details = detailList.find(
+            (v) => v.id === item.id && (v.itemType || 'Asset') === itemType
+          );
           if (details) arr.push(details);
         }
         const finalResp = {

@@ -89,10 +89,15 @@ const CatalogDetailsPage = createContainer(() => {
         assetId: details.id,
         sellerName: seller.seller.name,
         sellerId: seller.seller.id,
+        sellerType: seller.seller.type || 'User',
         price: seller.price,
         priceTickets: null,
         userAssetId: seller.userAssetId,
+        collectibleItemId: details.collectibleItemId || null,
+        collectibleProductId: seller.collectibleProductId || details.lowestAvailableResaleProductId || details.collectibleProductId || null,
+        collectibleItemInstanceId: seller.collectibleItemInstanceId || null,
         productId: details.productId || details.id,
+        isGamePass: Boolean(details.isGamePass || details.assetType === 34),
         currency: details.currency || 1,
       }
     } else if (details.isForSale) {
@@ -100,10 +105,15 @@ const CatalogDetailsPage = createContainer(() => {
         assetId: details.id,
         sellerName: details.creatorName,
         sellerId: details.creatorTargetId,
-        price: details.price,
+        sellerType: details.creatorType || 'User',
+        price: details.price ?? 0,
         priceTickets: details.priceTickets,
         userAssetId: null,
+        collectibleItemId: details.collectibleItemId || null,
+        collectibleProductId: details.collectibleProductId || null,
+        collectibleItemInstanceId: null,
         productId: details.productId || details.id,
+        isGamePass: Boolean(details.isGamePass || details.assetType === 34),
         currency: details.currency || 1,
       }
     }
@@ -138,7 +148,7 @@ const CatalogDetailsPage = createContainer(() => {
     isResellable: details && isResellable(details) || false,
     getPurchaseDetails,
 
-    subCategoryDisplayName: details && subCatIdToName(details.assetType),
+    subCategoryDisplayName: details && (details.itemType === 'Bundle' ? 'Bundle' : subCatIdToName(details.assetType)),
 
     offsaleDeadline,
     setOffsaleDeadline,
@@ -172,6 +182,7 @@ const CatalogDetailsPage = createContainer(() => {
       do {
         data = await getResellers({
           assetId: details.id,
+          collectibleItemId: details.collectibleItemId,
           cursor,
           limit: 100,
         });
@@ -186,26 +197,28 @@ const CatalogDetailsPage = createContainer(() => {
 
     loadOwnedCopies: (userId) => {
       if (!details) return;
-      // Get resellers (collectible items)
       if (isResellable(details)) {
-        // Get copies (resellable)
         getResellableCopies({
           assetId: details.id,
           userId: userId,
+          collectibleItemId: details.collectibleItemId,
         }).then(({ data }) => {
           setOwnedCopies(data);
         }).catch(e => {
           console.error('[error] could not get owned resellable copies', e);
+          setOwnedCopies([]);
         })
       } else {
-        // Get normal copies
         getOwnedCopies({
           assetId: details.id,
           userId: userId,
+          itemType: details.itemType,
+          assetType: details.assetType,
         }).then(data => {
           setOwnedCopies(data);
         }).catch(e => {
           console.error('[error] could not get owned copies', e);
+          setOwnedCopies([]);
         })
       }
     },

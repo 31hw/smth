@@ -19,9 +19,9 @@ const useStyles = createUseStyles({
     arrow: {
         width: '42px',
         minWidth: '42px',
-        border: '1px solid #d4d4d4',
-        background: '#efefef',
-        color: '#9a9a9a',
+        border: '1px solid var(--text-color-quinary)',
+        background: 'var(--surface-subtle)',
+        color: 'var(--text-color-secondary)',
         fontSize: '40px',
         lineHeight: '1',
         display: 'flex',

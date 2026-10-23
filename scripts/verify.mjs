@@ -110,6 +110,10 @@ for (const excludedUrl of [
   'https://www.roblox.com/develop',
   'https://www.roblox.com/en-us/create',
   'https://www.roblox.com/places/192800/update',
+  'https://www.roblox.com/game-pass/configure?id=1234',
+  'https://www.roblox.com/premium/membership',
+  'https://www.roblox.com/upgrades/robux',
+  'https://www.roblox.com/upgrade',
   'https://www.roblox.com/home?rbx_native=1',
 ]) {
   const dom = new JSDOM(
@@ -141,10 +145,86 @@ function mockRobloxApiResponse(rawUrl, method, data) {
   if (host === 'economy.roblox.com' && p.endsWith('/currency')) return { robux: 1200 };
   if (host === 'economy.roblox.com' && /^\/v2\/assets\/\d+\/details$/.test(p)) {
     const id = Number(p.split('/')[3]);
-    return { AssetId: id, TargetId: id, ProductId: id * 10, AssetTypeId: 8, Name: 'Valkyrie Helm', Description: 'Classic item', Creator: { Id: 1, CreatorTargetId: 1, Name: 'ROBLOX', CreatorType: 'User' }, PriceInRobux: 500, IsForSale: true, Sales: 100, Created: '2012-01-01T00:00:00Z', Updated: '2016-01-01T00:00:00Z' };
+    return {
+      AssetId: id,
+      TargetId: id,
+      ProductId: id * 10,
+      AssetTypeId: id === 10472779 ? 19 : 8,
+      Name: id === 10472779 ? 'Bloxy Cola' : 'Valkyrie Helm',
+      Description: 'Classic item',
+      Creator: { Id: 1, CreatorTargetId: 1, Name: 'ROBLOX', CreatorType: 'User' },
+      PriceInRobux: 500,
+      IsForSale: true,
+      Sales: 48291,
+      Created: '2012-01-01T00:00:00Z',
+      Updated: '2016-01-01T00:00:00Z',
+    };
   }
   if (host === 'catalog.roblox.com' && p === '/v1/catalog/items/details') {
-    return { data: [{ id: 1365767, assetType: 8, name: 'Valkyrie Helm', description: 'Classic item', creatorTargetId: 1, creatorType: 'User', creatorName: 'ROBLOX', price: 195000, itemRestrictions: ['Limited'], isForSale: true }] };
+    const reqItems = Array.isArray(data?.items) ? data.items : [{ id: 1365767, itemType: 'Asset' }];
+    return {
+      data: reqItems.map((it) =>
+        it.itemType === 'Bundle'
+          ? {
+              id: Number(it.id),
+              itemType: 'Bundle',
+              bundleType: 1,
+              name: 'Korblox Deathspeaker',
+              description: 'Classic bundle',
+              creatorTargetId: 1,
+              creatorType: 'User',
+              creatorName: 'ROBLOX',
+              price: 17000,
+              unitsAvailableForConsumption: 0,
+              favoriteCount: 92000,
+              itemRestrictions: [],
+            }
+          : {
+              id: Number(it.id),
+              itemType: 'Asset',
+              assetType: Number(it.id) === 10472779 ? 19 : 8,
+              name: Number(it.id) === 10472779 ? 'Bloxy Cola' : 'Valkyrie Helm',
+              description: 'Classic item',
+              creatorTargetId: 1,
+              creatorType: 'User',
+              creatorName: 'ROBLOX',
+              price: 500,
+              // Real Roblox returns unitsAvailableForConsumption: 0 and omits isForSale & Sales!
+              unitsAvailableForConsumption: 0,
+              favoriteCount: 15420,
+              itemRestrictions: [],
+            }
+      ),
+    };
+  }
+  if (host === 'catalog.roblox.com' && /^\/v1\/bundles\/\d+\/details$/.test(p)) {
+    const id = Number(p.split('/')[3]);
+    return {
+      id,
+      name: 'Korblox Deathspeaker',
+      description: 'Classic bundle',
+      bundleType: 'BodyParts',
+      items: [],
+      creator: { id: 1, name: 'ROBLOX', type: 'User' },
+      product: { id: id * 10, isForSale: true, priceInRobux: 17000 },
+    };
+  }
+  if (host === 'apis.roblox.com' && /^\/game-passes\/v1\/game-passes\/\d+\/product-info$/.test(p)) {
+    const id = Number(p.split('/')[4]);
+    return {
+      TargetId: id,
+      ProductId: id * 10,
+      AssetId: 0,
+      AssetTypeId: 34,
+      Name: 'VIP Game Pass',
+      Description: 'VIP perks',
+      Creator: { Id: 82471, CreatorTargetId: 82471, Name: 'Dued1', CreatorType: 'User' },
+      PriceInRobux: 150,
+      IsForSale: true,
+      Sales: 9320,
+      Created: '2018-05-01T00:00:00Z',
+      Updated: '2020-05-01T00:00:00Z',
+    };
   }
   if (host === 'games.roblox.com' && p === '/v1/games/multiget-place-details') {
     return [{ placeId: 192800, name: 'Work at a Pizza Place', description: 'Classic game', builder: 'Dued1', builderId: 82471, isPlayable: true, universeId: 47545, universeRootPlaceId: 192800, price: 0 }];
@@ -267,6 +347,8 @@ themeSelectEl.dispatchEvent(new win.Event('change', { bubbles: true }));
 await new Promise((r) => setTimeout(r, 80));
 
 assert.equal(win.document.body.dataset.rbxTheme, 'dark2019');
+assert.equal(win.document.documentElement.getAttribute('data-bs-theme'), 'dark');
+assert.equal(win.document.documentElement.style.getPropertyValue('--white-color'), '#232527');
 assert.ok(
   recordedApiCalls.some(
     (c) =>
@@ -276,7 +358,7 @@ assert.ok(
   ),
   'Expected PATCH https://accountsettings.roblox.com/v1/themes/user when changing theme in /My/Account!'
 );
-console.log('  [OK] Theme changes exclusively in /My/Account and syncs via PATCH accountsettings.roblox.com/v1/themes/user');
+console.log('  [OK] Theme changes exclusively in /My/Account, applies dark surface variables, and syncs via PATCH accountsettings.roblox.com/v1/themes/user');
 
 const testRoutes = [
   '/?landing=1',
@@ -285,6 +367,8 @@ const testRoutes = [
   '/games/192800/Work-at-a-Pizza-Place',
   '/catalog',
   '/catalog/1365767/Valkyrie-Helm',
+  '/bundles/192/Korblox-Deathspeaker',
+  '/game-pass/1234/VIP-Game-Pass',
   '/library',
   '/library/10472779/Bloxy-Cola',
   '/users/friends',
@@ -353,6 +437,17 @@ for (const era of ['2019', '2016']) {
     const nextNode = win.document.getElementById('__next');
     assert.ok(nextNode.innerHTML.length > 50, `Empty render on [${era}] ${route}`);
     assert.ok(!nextNode.textContent.includes('Something went wrong'), `ErrorBoundary on [${era}] ${route}`);
+    if (route === '/catalog/1365767/Valkyrie-Helm') {
+      await new Promise((r) => setTimeout(r, 80));
+      assert.ok(
+        !nextNode.textContent.includes('This item is not currently for sale'),
+        `On-sale item falsely marked off-sale on [${era}] ${route}`
+      );
+      assert.ok(
+        nextNode.textContent.includes('48,291'),
+        `Expected live economy v2 Sales count (48,291) on [${era}] ${route}; got: ${nextNode.textContent.slice(0, 300)}`
+      );
+    }
   }
   console.log(`  [OK] Verified all ${testRoutes.length} routes cleanly in ${era} Era!`);
 }

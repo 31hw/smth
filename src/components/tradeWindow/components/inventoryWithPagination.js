@@ -69,7 +69,8 @@ const useStyles = createUseStyles({
   requestButton: {
     fontSize: '8px',
     textAlign: 'center',
-    background: 'linear-gradient(0deg, rgba(187,187,187,1) 0%, rgba(255,255,255,1) 100%)',
+    background: 'var(--legacy-btn-gradient)',
+    color: 'var(--text-color-primary)',
     padding: 0,
     border: '1px solid var(--text-color-quinary)',
   },
@@ -119,7 +120,7 @@ const useStyles = createUseStyles({
     height: '125px',
     marginTop: '-30px',
     zIndex: 99,
-    background: 'white',
+    background: 'var(--white-color)',
     position: 'relative',
     bottom: '-20px',
     '@media(max-width: 767px)': {

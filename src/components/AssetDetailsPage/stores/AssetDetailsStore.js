@@ -39,27 +39,41 @@ const assetDetailsStore = createContainer(() => {
     useEffect(async () => {
         if (!details) return;
         
-        userOwnsItem({ userId: auth.userId, assetId: details.id })
-            .then(setOwned);
+        userOwnsItem({
+            userId: auth.userId,
+            assetId: details.id,
+            itemType: details.itemType,
+            assetType: details.assetType,
+        }).then(setOwned);
         /** @type number[] */
         getCollections({ userId: auth.userId })
             .then(d => setCollectioned(d.map(d => d.Id).includes(details.id)));
         
         if (isResellable()) {
-            getResellableCopies({ assetId: details.id, userId: auth.userId })
-                .then(d => setOwnedCopies(d?.data || []));
+            getResellableCopies({
+                assetId: details.id,
+                userId: auth.userId,
+                collectibleItemId: details.collectibleItemId,
+            }).then(d => setOwnedCopies(d?.data || []));
         } else {
-            getOwnedCopies({ assetId: details.id, userId: auth.userId })
-                .then(d => setOwnedCopies(d || []));
+            getOwnedCopies({
+                assetId: details.id,
+                userId: auth.userId,
+                itemType: details.itemType,
+                assetType: details.assetType,
+            }).then(d => setOwnedCopies(d || []));
         }
         
         if (!isLimited()) return;
-        getResaleData({ assetId: details.id }).then(setResaleData);
+        getResaleData({
+            assetId: details.id,
+            collectibleItemId: details.collectibleItemId,
+        }).then(setResaleData);
         
         if (!isResellable()) return;
         loadResellers();
         loadOwners();
-    }, [details]);
+    }, [details, auth.userId]);
     
     async function loadResellers() {
         let data = [];
@@ -67,7 +81,12 @@ const assetDetailsStore = createContainer(() => {
         let guard = 0;
         do {
             /** @type ROBLOXCollectionPaginated<ResellerData> */
-            const resellData = (await getResellers({ assetId: details.id, cursor: cursor, limit: 100 }))?.data;
+            const resellData = (await getResellers({
+                assetId: details.id,
+                collectibleItemId: details.collectibleItemId,
+                cursor: cursor,
+                limit: 100,
+            }))?.data;
             if (!resellData || !Array.isArray(resellData.data) || resellData.data.length === 0) {
                 break;
             }
@@ -152,10 +171,15 @@ const assetDetailsStore = createContainer(() => {
                 assetId: details.id,
                 sellerName: seller.seller.name,
                 sellerId: seller.seller.id,
+                sellerType: seller.seller.type || 'User',
                 price: seller.price,
                 priceTickets: null,
                 userAssetId: seller.userAssetId,
+                collectibleItemId: details.collectibleItemId || null,
+                collectibleProductId: seller.collectibleProductId || details.lowestAvailableResaleProductId || details.collectibleProductId || null,
+                collectibleItemInstanceId: seller.collectibleItemInstanceId || null,
                 productId: details.productId || details.id,
+                isGamePass: Boolean(details.isGamePass || details.assetType === 34),
                 currency: getCurrency(),
                 expectedPrice: seller.price,
             };
@@ -164,12 +188,17 @@ const assetDetailsStore = createContainer(() => {
                 assetId: details.id,
                 sellerName: details.creatorName,
                 sellerId: details.creatorTargetId,
+                sellerType: details.creatorType || 'User',
                 price: details.price,
                 priceTickets: details.priceTickets,
                 userAssetId: null,
+                collectibleItemId: details.collectibleItemId || null,
+                collectibleProductId: details.collectibleProductId || null,
+                collectibleItemInstanceId: null,
                 productId: details.productId || details.id,
+                isGamePass: Boolean(details.isGamePass || details.assetType === 34),
                 currency: getCurrency(),
-                expectedPrice: getCurrency() === CurrencyType.Tickets ? details.priceTickets : details.price,
+                expectedPrice: getCurrency() === CurrencyType.Tickets ? details.priceTickets : (details.price ?? 0),
             }
         }
         return null;

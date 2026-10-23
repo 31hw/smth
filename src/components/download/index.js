@@ -4,13 +4,13 @@ import { getTheme, themeType } from "../../services/theme";
 
 const useDownloadStyles = createUseStyles({
     title: {
-        color: p => p.theme === themeType.obc2016 ? 'var(--white-color)' : 'var(--text-color-primary)',
+        color: 'var(--text-color-primary)',
         fontSize: '32px',
         fontWeight: '700',
     },
     subTitle: {
         fontSize: '14px',
-        color: p => p.theme === themeType.obc2016 ? 'var(--white-color)' : undefined,
+        color: 'var(--text-color-primary)',
     },
     card: {
         maxWidth: '320px',
@@ -90,8 +90,8 @@ const useDownloadStyles = createUseStyles({
         fontWeight: 700,
         letterSpacing: '0.06em',
         textTransform: 'uppercase',
-        color: '#5f6875',
-        background: '#e4e8ef',
+        color: 'var(--text-color-secondary)',
+        background: 'var(--surface-subtle)',
     },
 });
 

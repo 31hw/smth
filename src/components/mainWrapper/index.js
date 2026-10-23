@@ -14,7 +14,7 @@ const useStyles = createUseStyles({
   },
   fallback: {
     padding: '20px',
-    color: '#222',
+    color: 'var(--text-color-primary)',
   }
 })
 

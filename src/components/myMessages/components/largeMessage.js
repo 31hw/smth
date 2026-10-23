@@ -42,8 +42,9 @@ const useStyles = createUseStyles({
   replyText: {
     width: '100%',
     padding: '8px 10px',
-    background: '#eaeaea',
-    border: '1px solid #666',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color-primary)',
+    border: '1px solid var(--text-color-quinary)',
   },
   replyWrapper: {
     width: '170px',

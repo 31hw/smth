@@ -21,15 +21,22 @@ const useStyles = createUseStyles({
  * @returns {JSX.Element}
  * @constructor
  */
-const ItemImage = ({ id, className, name }) => {
+const ItemImage = ({ id, className, name, itemType = 'Asset', assetType = null }) => {
     const s = useStyles();
     const store = ThumbnailStore.useContainer();
     
     const [retryCount, setRetryCount] = useState(0);
     const [image, setImage] = useState(store.getPlaceholder());
     
-    useEffect(() => setImage(store.getAssetThumbnail(id, '420x420')),
-        [id, className, name, store.thumbnails]);
+    useEffect(() => {
+        if (itemType === 'Bundle') {
+            setImage(store.getBundleThumbnail(id, '420x420'));
+        } else if (itemType === 'GamePass' || Number(assetType) === 34) {
+            setImage(store.getGamePassThumbnail(id, '420x420'));
+        } else {
+            setImage(store.getAssetThumbnail(id, '420x420'));
+        }
+    }, [id, itemType, assetType, className, name, store.thumbnails]);
     
     return <img className={`${s.image} ${className || ''}`} src={image} alt={name} onError={(e) => {
         if (retryCount >= 3) return;

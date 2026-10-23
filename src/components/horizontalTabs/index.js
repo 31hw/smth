@@ -20,7 +20,7 @@ const useStyles = createUseStyles({
     lineHeight: '1em',
     boxShadow: 'inset 0 -4px 0 0 var(--primary-color)',
     '&:hover': {
-      background: '#f2f2f2'
+      background: 'var(--surface-hover)'
     },
   },
   spanText: {
@@ -45,7 +45,7 @@ const useStyles = createUseStyles({
   btnBottomSeperator: {
     width: '100%',
     height: '5px',
-    background: 'white',
+    background: 'var(--white-color)',
     marginBottom: '-5px',
   },
   vTabUnselected: {
@@ -56,7 +56,7 @@ const useStyles = createUseStyles({
     }
   },
   count: {
-    background: '#e0f1fc',
+    background: 'var(--surface-selected)',
     border: '1px solid #84a5c9',
     paddingLeft: '4px',
     paddingRight: '4px',

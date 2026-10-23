@@ -33,6 +33,45 @@
 	vertical-align: middle;
 }
 
+html[data-rbx-era="2019"] .icon-default-navigation,
+html[data-rbx-era="2019"] .icon-nav-menu,
+html[data-rbx-era="2019"] .icon-nav-robux,
+html[data-rbx-era="2019"] .icon-nav-tix,
+html[data-rbx-era="2019"] .icon-nav-settings,
+html[data-rbx-era="2019"] .icon-nav-search,
+html[data-rbx-era="2019"] .icon-nav-home,
+html[data-rbx-era="2019"] .icon-nav-profile,
+html[data-rbx-era="2019"] .icon-nav-message,
+html[data-rbx-era="2019"] .icon-nav-friends,
+html[data-rbx-era="2019"] .icon-nav-charactercustomizer,
+html[data-rbx-era="2019"] .icon-nav-inventory,
+html[data-rbx-era="2019"] .icon-nav-trade,
+html[data-rbx-era="2019"] .icon-nav-group,
+html[data-rbx-era="2019"] .icon-nav-blog,
+html[data-rbx-era="2019"] .icon-nav-search-white {
+	background-image: url('/img/2019svg.svg');
+}
+
+html[data-rbx-era="2019"] .icon-nav-blog {
+	background-position: 0 -364px;
+}
+
+html[data-rbx-era="2019"] .icon-nav-blog:hover,
+html[data-rbx-era="2019"] button:hover .icon-nav-blog,
+html[data-rbx-era="2019"] a:hover .icon-nav-blog {
+	background-position: -28px -364px;
+}
+
+html[data-rbx-era="2019"] .icon-nav-search-white {
+	background-position: 0 -392px;
+}
+
+html[data-rbx-era="2019"] .icon-nav-search-white:hover,
+html[data-rbx-era="2019"] button:hover .icon-nav-search-white,
+html[data-rbx-era="2019"] a:hover .icon-nav-search-white {
+	background-position: -28px -392px;
+}
+
 .icon-nav-collectibles {
 	background-image: url('/img/logo_R.svg');
 	background-repeat: no-repeat;

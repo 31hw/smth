@@ -14,7 +14,7 @@ const useStyles = createUseStyles({
     color: '#828282',
   },
   subjectUnread: {
-    color: '#000',
+    color: 'var(--text-color-primary)',
   },
   subjectBodyParagraph: {
     marginBottom: 0,

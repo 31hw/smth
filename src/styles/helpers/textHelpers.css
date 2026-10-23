@@ -28,7 +28,7 @@
 }
 /* Colors */
 .lighten-1 {
-	color: #343434;
+	color: var(--text-color-primary);
 }
 .lighten-2 {
 	color: #383838;

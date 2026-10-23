@@ -45,7 +45,7 @@ const useStyles = createUseStyles({
         width: 16,
         height: 16,
         border: "1px solid #b8b8b8",
-        backgroundColor: "#fff",
+        backgroundColor: "var(--input-bg)",
         borderRadius: "50%",
         cursor: "pointer",
         appearance: "none",

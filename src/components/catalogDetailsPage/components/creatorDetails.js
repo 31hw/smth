@@ -58,8 +58,10 @@ const CreatorDetails = props => {
             <StatEntry name="Creator" value={
                 <CreatorLink id={props.id} name={props.name} type={props.type}/>
             }/>
-            <StatEntry name="Created" value={dayjs(props.createdAt).format('M/D/YYYY')}/>
-            <StatEntry name="Updated" value={dayjs(props.updatedAt).format('M/D/YYYY')}/>
+            {props.createdAt ? <StatEntry name="Created" value={dayjs(props.createdAt).format('M/D/YYYY')}/> : null}
+            {props.updatedAt ? <StatEntry name="Updated" value={dayjs(props.updatedAt).format('M/D/YYYY')}/> : null}
+            {typeof props.favoriteCount === 'number' ? <StatEntry name="Favorited" value={`${props.favoriteCount.toLocaleString()} times`}/> : null}
+            {props.totalQuantity > 0 ? <StatEntry name="Remaining" value={`${(props.remaining ?? 0).toLocaleString()} / ${props.totalQuantity.toLocaleString()}`}/> : null}
             {props.owned &&
                 <StatEntry className={s.ownedParent} name="Owned" value={props.owned ?
                     <div className={s.ownedStat}>

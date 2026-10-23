@@ -93,7 +93,7 @@ const useFriendStyles = createUseStyles({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
     textDecoration: 'none',
-    color: '#000',
+    color: 'var(--text-color-primary)',
     display: 'block',
     lineHeight: '1.867em',
     '&:hover': {

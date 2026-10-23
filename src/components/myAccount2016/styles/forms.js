@@ -3,27 +3,31 @@ import { createUseStyles } from "react-jss";
 const useFormStyles = createUseStyles({
   accountInfoLabel: {
     marginBottom: '6px',
-    color: 'var(--text-color-quinary)',
+    color: 'var(--text-color-secondary)',
     fontSize: '15px',
   },
   accountInfoValue: {
-    color: '#666',
+    color: 'var(--text-color-secondary)',
   },
   descInput: {
     width: '100%',
     borderRadius: '4px',
     padding: '6px 8px',
     border: '1px solid var(--text-color-quinary)',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color-primary)',
   },
   select: {
     borderRadius: '2px',
     fontSize: '16px',
+    background: 'var(--input-bg)',
+    color: 'var(--text-color-primary)',
   },
   disabled: {
-    background: 'white!important',
-    color: 'var(--text-color-quinary)',
+    background: 'var(--surface-subtle)!important',
+    color: 'var(--text-color-secondary)',
     '&:focus': {
-      color: 'var(--text-color-quinary)',
+      color: 'var(--text-color-secondary)',
       boxShadow: 'none',
     },
   },
@@ -36,7 +40,8 @@ const useFormStyles = createUseStyles({
     marginTop: '16px',
   },
   saveButton: {
-    background: 'white',
+    background: 'var(--white-color)',
+    color: 'var(--text-color-primary)',
     border: '1px solid var(--text-color-quinary)',
     borderRadius: '4px',
     fontSize: '16px',

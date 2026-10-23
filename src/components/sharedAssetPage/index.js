@@ -19,7 +19,10 @@ import { useRouter } from "next/dist/client/router";
 import { catalogPageStyle, getCatalogPageStyle } from "../../services/theme";
 import SharedAssetPage2019 from "../sharedAssetPage2019";
 
-export const getUrlForAssetType = ({ assetTypeId, assetId, name, forceGame = false }) => {
+export const getUrlForAssetType = ({ assetTypeId, assetId, name, itemType = 'Asset', forceGame = false }) => {
+    if (itemType === 'Bundle') {
+        return getItemUrl({ assetId, name, itemType: 'Bundle' });
+    }
     if (forceGame || assetTypeId === 9) {
         // Place
         return getGameUrl({
@@ -33,9 +36,17 @@ export const getUrlForAssetType = ({ assetTypeId, assetId, name, forceGame = fal
             name,
         });
     }
-    // Anything else
-    return getItemUrl({ assetId: assetId, name: name });
+    // Anything else (including GamePass -> /game-pass/...)
+    return getItemUrl({ assetId: assetId, name: name, itemType, assetType: assetTypeId });
 }
+
+const detectRequestedItemType = () => {
+    if (typeof window === 'undefined') return 'Asset';
+    const p = window.location.pathname || '';
+    if (/\/bundles\/\d+/i.test(p)) return 'Bundle';
+    if (/\/game-pass\/\d+/i.test(p)) return 'GamePass';
+    return 'Asset';
+};
 
 const AssetPage = props => {
     const router = useRouter();
@@ -43,19 +54,18 @@ const AssetPage = props => {
     const name = router.query[props.nameParamName];
     const forceGameRoute = router.pathname === '/games/[assetId]/[name]';
     
-    // TODO: all this asset details crap needs to be done in getInitialProps()
-    // The only reason it's not in there now is because I don't have a solution to the server-side CSRF issue yet
     /**
      * @type {[AssetDetailsEntry, import('react').Dispatch<AssetDetailsEntry>]}
      */
     const [details, setDetails] = useState(null);
     const [error, setError] = useState(null);
     
-    const redirectIfBadUrl = ({ assetTypeId, name }) => {
+    const redirectIfBadUrl = ({ assetTypeId, name, itemType = 'Asset' }) => {
         const expectedUrl = getUrlForAssetType({
             assetTypeId: assetTypeId,
             assetId: assetId,
             name: name,
+            itemType,
             forceGame: forceGameRoute,
         });
         if (typeof window !== 'undefined' && window.location.pathname !== expectedUrl) {
@@ -101,13 +111,14 @@ const AssetPage = props => {
             return;
         }
 
-        getItemDetails([assetId]).then(result => {
+        const reqType = detectRequestedItemType();
+        getItemDetails([{ id: assetId, itemType: reqType }]).then(result => {
             const newDetails = result.data.data[0];
             if (newDetails === undefined) {
                 throw new Error('NotFound');
             }
             setDetails(newDetails);
-            redirectIfBadUrl({ assetTypeId: newDetails.assetType, name: newDetails.name })
+            redirectIfBadUrl({ assetTypeId: newDetails.assetType, name: newDetails.name, itemType: newDetails.itemType })
         }).catch(e => {
             if (e.response && e.response.status === 406) {
                 const isBadAssetType = e.response.data.errors.find(v => v.code === 11);

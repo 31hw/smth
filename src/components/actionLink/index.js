@@ -22,8 +22,8 @@ const useBuyButtonStyles = createUseStyles({
     },
     wrapper: {
         width: '100%',
-        border: '1px solid #a7a7a7',
-        background: '#e1e1e1',
+        border: '1px solid var(--text-color-quinary)',
+        background: 'var(--surface-panel)',
     },
     defaultBg: {
         background: 'linear-gradient(0deg, rgba(0,113,0,1) 0%, rgba(64,193,64,1) 100%)', // 40c140 #007100

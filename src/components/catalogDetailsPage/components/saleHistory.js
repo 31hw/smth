@@ -27,7 +27,10 @@ const SaleHistory = () => {
 
   useEffect(() => {
     if (!store.details) return;
-    getResaleData({ assetId: store.details.id }).then((resaleData) => {
+    getResaleData({
+      assetId: store.details.id,
+      collectibleItemId: store.details.collectibleItemId,
+    }).then((resaleData) => {
       setRap(resaleData.recentAveragePrice ?? 0);
       setRapChart(resaleData.priceDataPoints || []);
       setVolumeChart(resaleData.volumeDataPoints || []);

@@ -32,18 +32,18 @@ const useStyles = createUseStyles({
   },
   userCard: {},
   username: {
-    color: '#000',
+    color: 'var(--text-color-primary)',
   },
   friendsContainer: {
     background: 'var(--background-color)',
     padding: '4px 8px',
   },
   manageRequestCard: {
-    background: '#f2f2f2',
+    background: 'var(--surface-subtle)',
     width: '100%',
-    borderLeft: '1px solid #e6e6e6',
-    borderRight: '1px solid #e6e6e6',
-    borderBottom: '1px solid #e6e6e6',
+    borderLeft: '1px solid var(--border-subtle)',
+    borderRight: '1px solid var(--border-subtle)',
+    borderBottom: '1px solid var(--border-subtle)',
     position: 'relative',
   },
   friendCard: {
@@ -67,9 +67,9 @@ const useStyles = createUseStyles({
     },
   },
   ignoreButton: {
-    background: '#fff',
-    border: '1px solid #a8a4a2',
-    color: 'rgb(40,40,40)',
+    background: 'var(--white-color)',
+    border: '1px solid var(--text-color-quinary)',
+    color: 'var(--text-color-primary)',
   },
   acceptButton: {
     background: 'rgb(0, 162, 255)',

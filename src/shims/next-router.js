@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { isCreateRoute, matchRoute } from '../routeMeta';
+import { isCreateRoute, isNativePassthroughRoute, matchRoute } from '../routeMeta';
 
 const listeners = new Set();
 const eventHandlers = {
@@ -71,6 +71,11 @@ if (typeof window !== 'undefined') {
       return;
     }
 
+    // Route native Upgrade / Roblox Premium (Plus) / Buy Robux links straight to Roblox's native page
+    if (isNativePassthroughRoute(rawHref)) {
+      return;
+    }
+
     if (/^https?:\/\//i.test(rawHref)) {
       try {
         const u = new URL(rawHref);
@@ -113,6 +118,11 @@ export function navigateInternal(rawUrl, replace = false) {
     } else {
       window.open('https://create.roblox.com/', '_blank', 'noopener');
     }
+    return Promise.resolve(true);
+  }
+
+  if (isNativePassthroughRoute(url)) {
+    window.location.href = url;
     return Promise.resolve(true);
   }
 

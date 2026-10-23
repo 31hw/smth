@@ -32,14 +32,14 @@ const useStyles = createUseStyles({
         fontWeight: 500,
         padding: "15px 0",
         margin: 0,
-        color: p => p.theme === themeType.obc2016 ? "var(--white-color)" : undefined,
+        color: "var(--text-color-primary)",
         "@media(max-width: 576px)": {
             padding: "0 0 10px 0",
             fontSize: 48,
         },
     },
     avatarHeaderSubText: {
-        color: p => p.theme === themeType.obc2016 ? "var(--white-color)" : undefined,
+        color: "var(--text-color-primary)",
     },
     avatarThumbContainer: {
         position: "relative",
@@ -87,7 +87,7 @@ const useStyles = createUseStyles({
         fontSize: 21,
         padding: "15px 0px 13px 0",
         margin: 0,
-        color: p => p.theme === themeType.obc2016 ? "var(--white-color)" : undefined,
+        color: "var(--text-color-primary)",
         "@media(max-width: 720px)": {
             padding: "10px 0 8px 0"
         },
@@ -152,7 +152,7 @@ const useStyles = createUseStyles({
     redrawContainer: {
         "& span": {
             fontSize: 16,
-            color: p => p.theme === themeType.obc2016 ? "var(--white-color)" : undefined,
+            color: "var(--text-color-primary)",
         }
     },
     redrawBtn: {
@@ -635,7 +635,7 @@ function AvatarEditor() {
                                             style={{
                                                 paddingTop: 9,
                                                 paddingBottom: 4,
-                                                color: getTheme() === themeType.obc2016 ? "var(--white-color)" : undefined,
+                                                color: "var(--text-color-primary)",
                                             }}
                                         >{CapitalizeVariable(page.selectedList.tab)}
                                             {!IsNullOrEmpty(page?.selectedList?.subTab) && ` > ${CapitalizeVariable(page?.selectedList?.subTab)}`}

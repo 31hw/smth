@@ -72,7 +72,7 @@ const useColorStyles = createUseStyles({
     position: 'absolute',
     width: '200px',
     height: '300px',
-    background: 'white',
+    background: 'var(--white-color)',
     marginLeft: '10px',
     overflowY: 'auto',
     border: '1px solid #9e9e9e',
