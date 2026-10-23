@@ -65,14 +65,39 @@ function escapeAttr(str) {
 }
 
 /**
- * Converts markdown-style links "[label](url)" (including "[label]([url](url))" oddities
- * that appear in Roblox system announcements) into plain <a> tags.
+ * Linkifies bare URLs and markdown-style "[label](url)" links found in plain text nodes.
+ * Input text is already HTML-escaped by the caller.
  */
-function convertMarkdownLinks(str) {
-  return String(str || '').replace(
-    /\[([^\]]{1,200})\]\(\s*\[?((?:https?:\/\/|\/)[^\s\])]+)\]?(?:\([^)]*\))?\s*\)/gi,
-    (_match, label, url) => `<a href="${url}">${label}</a>`
-  );
+function linkifyEscapedText(escapedText) {
+  const mdRe = /\[([^\]]{1,200})\]\((https?:\/\/[^\s)]+)\)/g;
+  const segments = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = mdRe.exec(escapedText)) !== null) {
+    segments.push({ type: 'text', value: escapedText.slice(lastIndex, match.index) });
+    const label = match[1];
+    const url = match[2];
+    segments.push({
+      type: 'anchor',
+      href: url,
+      label: /^https?:\/\//i.test(label) ? url : label,
+    });
+    lastIndex = match.index + match[0].length;
+  }
+  segments.push({ type: 'text', value: escapedText.slice(lastIndex) });
+
+  return segments
+    .map((segment) => {
+      if (segment.type === 'anchor') {
+        return `<a href="${segment.href}" rel="noopener noreferrer" target="_blank">${segment.label}</a>`;
+      }
+      return segment.value.replace(/(https?:\/\/[^\s<]+)/g, (raw) => {
+        const trimmed = raw.replace(/[.,;:!?)\]]+$/, '');
+        const trailing = raw.slice(trimmed.length);
+        return `<a href="${trimmed}" rel="noopener noreferrer" target="_blank">${trimmed}</a>${trailing}`;
+      });
+    })
+    .join('');
 }
 
 function maybeDecodeEscapedMarkup(input) {
@@ -92,8 +117,20 @@ function maybeDecodeEscapedMarkup(input) {
 
 function sanitizeHref(rawHref) {
   if (!rawHref || typeof rawHref !== 'string') return null;
-  const trimmed = rawHref.trim();
+  let trimmed = rawHref.trim();
   if (!trimmed) return null;
+
+  // Roblox system messages sometimes ship markdown-flavoured hrefs such as
+  // "[https://www.roblox.com/x](https://www.roblox.com/x)" or "[url](url)".
+  if (/[[\]()]/.test(trimmed)) {
+    const mdMatch =
+      trimmed.match(/\]\(\s*(https?:\/\/[^\s)\]]+)\s*\)/i) ||
+      trimmed.match(/(https?:\/\/[^\s)\]}]+)/i);
+    if (mdMatch) {
+      trimmed = mdMatch[1];
+    }
+  }
+
   if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
     return trimmed;
   }
@@ -108,11 +145,15 @@ function sanitizeHref(rawHref) {
   return null;
 }
 
-function serializeSanitizedNode(node) {
+function serializeSanitizedNode(node, insideAnchor = false) {
   if (!node) return '';
   // TEXT_NODE
   if (node.nodeType === 3) {
-    return escapeHtmlText(node.nodeValue || '');
+    const textValue = node.nodeValue || '';
+    if (insideAnchor) {
+      return escapeHtmlText(textValue);
+    }
+    return linkifyEscapedText(escapeHtmlText(textValue));
   }
   // ELEMENT_NODE
   if (node.nodeType !== 1) {
@@ -126,7 +167,7 @@ function serializeSanitizedNode(node) {
 
   let inner = '';
   for (let i = 0; i < node.childNodes.length; i += 1) {
-    inner += serializeSanitizedNode(node.childNodes[i]);
+    inner += serializeSanitizedNode(node.childNodes[i], tag === 'a');
   }
 
   if (!ALLOWED_TAGS.has(tag)) {
@@ -158,16 +199,17 @@ function serializeSanitizedNode(node) {
 }
 
 export function sanitizeRichHtml(rawInput, { convertNewlines = false } = {}) {
-  const raw = convertMarkdownLinks(maybeDecodeEscapedMarkup(rawInput));
+  const raw = maybeDecodeEscapedMarkup(rawInput);
   if (!raw) return '';
 
   let prepared = raw;
   if (convertNewlines) {
-    const hasBlockOrBr = /<\s*(?:br|p|div|ul|ol|li|pre|blockquote)\b/i.test(prepared);
-    if (!hasBlockOrBr) {
+    const hasAnyTag = /<\/?[a-z][^>]*>/i.test(prepared);
+    if (!hasAnyTag) {
+      // Plain-text body: escape it first, then preserve paragraph breaks.
       prepared = escapeHtmlText(prepared).replace(/\r?\n/g, '<br>');
     } else {
-      // Collapse newline immediately adjacent to <br> so <br>\n doesn't create double gaps, convert standalone \n
+      // HTML body: keep markup, just normalize stray newlines into <br>.
       prepared = prepared
         .replace(/<br\s*\/?>\r?\n/gi, '<br>')
         .replace(/\r?\n/g, '<br>');
@@ -185,7 +227,7 @@ export function sanitizeRichHtml(rawInput, { convertNewlines = false } = {}) {
 
   let out = '';
   for (let i = 0; i < root.childNodes.length; i += 1) {
-    out += serializeSanitizedNode(root.childNodes[i]);
+    out += serializeSanitizedNode(root.childNodes[i], false);
   }
   return out;
 }
@@ -193,7 +235,11 @@ export function sanitizeRichHtml(rawInput, { convertNewlines = false } = {}) {
 export function stripHtmlToText(rawInput) {
   const raw = maybeDecodeEscapedMarkup(rawInput);
   if (!raw) return '';
-  const spaced = raw.replace(/<\s*(?:br|\/p|\/div|\/li|\/tr|\/h[1-6])\b[^>]*>/gi, ' ');
+  const withoutMarkdown = raw.replace(
+    /\[([^\]]{1,200})\]\((https?:\/\/[^\s)]+)\)/gi,
+    (_m, label, url) => (/^https?:\/\//i.test(label) ? url : label)
+  );
+  const spaced = withoutMarkdown.replace(/<\s*(?:br|\/p|\/div|\/li|\/tr|\/h[1-6])\b[^>]*>/gi, ' ');
   if (typeof DOMParser !== 'undefined') {
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<div>${spaced}</div>`, 'text/html');

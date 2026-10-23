@@ -642,6 +642,37 @@ for (const era of ['2019', '2016']) {
           nextNode.textContent.includes('Important account notice'),
         `Expected inbox messages to render on [${era}] /My/Messages; got: ${nextNode.textContent.slice(0, 300)}`
       );
+
+      if (era === '2019') {
+        // Open Notifications, then open the announcement and verify the escaped-HTML
+        // body is sanitized into real markup with a working agreement link.
+        const notifTab = [...win.document.querySelectorAll('p')].find((el) =>
+          el.textContent.trim().startsWith('Notifications')
+        );
+        assert.ok(notifTab, 'Expected a Notifications tab on /My/Messages');
+        notifTab.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 120));
+
+        const messageRow = win.document.querySelector('[class*="messageRow"]');
+        assert.ok(messageRow, 'Expected an announcement message row in Notifications');
+        messageRow.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 80));
+
+        const agreementLink = win.document.querySelector('a[href*="/modcreditagreement/"]');
+        assert.ok(
+          agreementLink,
+          'Expected the escaped-HTML announcement to render a clickable modcreditagreement link'
+        );
+        assert.ok(
+          win.document.getElementById('__next').textContent.includes('Sincerely, The Roblox Team'),
+          'Expected the announcement body text to render unescaped'
+        );
+        const backBtn = [...win.document.querySelectorAll('button')].find(
+          (el) => el.textContent.trim() === 'Back'
+        );
+        if (backBtn) backBtn.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 60));
+      }
     }
     if (route === '/users/261/friends') {
       await new Promise((r) => setTimeout(r, 80));
