@@ -26,7 +26,8 @@ export const getItemUrl = ({ assetId, name, itemType = 'Asset', assetType = null
 };
 
 function normalizeCatalogLimit(limit) {
-  const valid = [10, 28, 30, 60, 120];
+  // Roblox catalog search only accepts limits of 10, 28 and 30.
+  const valid = [10, 28, 30];
   const n = Number(limit) || 28;
   if (valid.includes(n)) return n;
   return valid.reduce((prev, curr) => (Math.abs(curr - n) < Math.abs(prev - n) ? curr : prev), 28);
