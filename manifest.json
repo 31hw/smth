@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ROBLOX Classic Overlay",
-  "version": "1.1.0",
-  "description": "Restyles Roblox with a 2016 or 2019 inspired interface while preserving the live website.",
+  "version": "2.0.0",
+  "description": "2016 source-accurate Roblox frontend adapter (work in progress).",
   "permissions": [
     "storage"
   ],
@@ -40,16 +40,6 @@
         "content.js"
       ],
       "run_at": "document_start"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "assets/*.svg"
-      ],
-      "matches": [
-        "https://*.roblox.com/*"
-      ]
     }
   ]
 }
