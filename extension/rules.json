@@ -1,0 +1,49 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Origin",
+          "operation": "set",
+          "value": "https://www.roblox.com"
+        },
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://www.roblox.com/"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": ["roblox.com"],
+      "excludedRequestDomains": ["create.roblox.com"],
+      "excludedInitiatorDomains": ["create.roblox.com"],
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "content-security-policy",
+          "operation": "remove"
+        },
+        {
+          "header": "content-security-policy-report-only",
+          "operation": "remove"
+        }
+      ]
+    },
+    "condition": {
+      "requestDomains": ["www.roblox.com", "web.roblox.com"],
+      "excludedRequestDomains": ["create.roblox.com"],
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]

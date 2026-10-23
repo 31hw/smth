@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Classic Roblox UI</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      width: 320px;
+      font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      background: #191b1d;
+      color: #f2f4f5;
+      padding: 14px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #393b3d;
+      margin-bottom: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .brand img {
+      width: 28px;
+      height: 28px;
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: #9fa4a8;
+    }
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .toggle input {
+      accent-color: #02b757;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .settings-box {
+      background: #232527;
+      border: 1px solid #393b3d;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .settings-box p {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: #bdbebe;
+      line-height: 1.4;
+    }
+    .settings-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: #00a2ff;
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+    .settings-btn:hover {
+      background: #2bb1ff;
+    }
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #9fa4a8;
+      font-weight: 700;
+      margin: 10px 0 6px;
+    }
+    .quick-links {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .quick-links a {
+      display: block;
+      text-align: center;
+      background: #232527;
+      border: 1px solid #393b3d;
+      color: #f2f4f5;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 4px;
+      border-radius: 4px;
+    }
+    .quick-links a:hover {
+      border-color: #00a2ff;
+      color: #ffffff;
+    }
+    .note {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #2d2f31;
+      font-size: 11px;
+      color: #8c9196;
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <img src="public/img/logo_R.svg" alt="R" />
+      <div>
+        <div class="brand-title">Classic Roblox UI</div>
+        <div class="brand-sub">Microsoft Edge Overlay</div>
+      </div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="extEnabled" checked />
+      <span>Active</span>
+    </label>
+  </div>
+
+  <div class="settings-box">
+    <p>
+      Theme &amp; Classic UI appearance can only be changed inside Roblox Account Settings (synced with your Roblox account).
+    </p>
+    <a class="settings-btn" href="https://www.roblox.com/My/Account" target="_blank" rel="noreferrer">
+      Open Account Settings
+    </a>
+  </div>
+
+  <div class="section-label">Quick Navigation</div>
+  <div class="quick-links">
+    <a href="https://www.roblox.com/home" target="_blank" rel="noreferrer">Home</a>
+    <a href="https://www.roblox.com/games" target="_blank" rel="noreferrer">Games</a>
+    <a href="https://www.roblox.com/catalog" target="_blank" rel="noreferrer">Catalog</a>
+    <a href="https://www.roblox.com/My/Avatar" target="_blank" rel="noreferrer">Avatar</a>
+    <a href="https://www.roblox.com/My/Account" target="_blank" rel="noreferrer">Settings</a>
+    <a href="https://create.roblox.com/" target="_blank" rel="noreferrer">Create ↗</a>
+  </div>
+
+  <div class="note">
+    Roblox Create (<code>create.roblox.com</code>) is intentionally kept native and untouched.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

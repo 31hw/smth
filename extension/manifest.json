@@ -1,0 +1,99 @@
+{
+  "manifest_version": 3,
+  "name": "Classic Roblox UI (2016 & 2019)",
+  "short_name": "Classic Roblox",
+  "version": "1.0.0",
+  "description": "Replaces modern Roblox web pages with the classic 2016 & 2019 ROBLOX UI powered by live Roblox endpoints (leaves Roblox Create untouched).",
+  "minimum_edge_version": "102.0",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Classic Roblox UI (2016 / 2019)",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "declarativeNetRequestWithHostAccess",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.roblox.com/*",
+    "*://roblox.com/*",
+    "*://*.rbxcdn.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "roblox_headers",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.roblox.com/*",
+        "https://web.roblox.com/*"
+      ],
+      "exclude_matches": [
+        "https://create.roblox.com/*",
+        "https://www.roblox.com/create*",
+        "https://www.roblox.com/develop*",
+        "https://www.roblox.com/build*",
+        "https://www.roblox.com/places/*",
+        "https://www.roblox.com/universes/*",
+        "https://www.roblox.com/game-pass/*",
+        "https://www.roblox.com/ide/*"
+      ],
+      "js": ["early-main.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://www.roblox.com/*",
+        "https://web.roblox.com/*"
+      ],
+      "exclude_matches": [
+        "https://create.roblox.com/*",
+        "https://www.roblox.com/create*",
+        "https://www.roblox.com/develop*",
+        "https://www.roblox.com/build*",
+        "https://www.roblox.com/places/*",
+        "https://www.roblox.com/universes/*",
+        "https://www.roblox.com/game-pass/*",
+        "https://www.roblox.com/ide/*"
+      ],
+      "js": [
+        "bundles/vendor-3d.js",
+        "bundles/content-ui.js"
+      ],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "public/*",
+        "bundles/*"
+      ],
+      "matches": [
+        "https://*.roblox.com/*"
+      ]
+    }
+  ]
+}
