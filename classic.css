@@ -1,0 +1,21 @@
+/* Classic Roblox Overlay — visual language adapted from the MIT/public-domain sources listed in README. */
+html.rco-enabled{--rco-blue:#0074bd;--rco-green:#02b757;--rco-red:#e2231a;--rco-ink:#191919;--rco-line:#b8b8b8;--rco-bg:#e3e3e3;--rco-panel:#fff}
+html.rco-enabled body{background:var(--rco-bg)!important;color:var(--rco-ink)!important;font-family:Arial,Helvetica,sans-serif!important;background-image:linear-gradient(#eee,#ddd)!important;background-attachment:fixed!important}
+html.rco-enabled body:before{content:"CLASSIC ROBLOX";position:fixed;z-index:100000;left:14px;top:7px;color:#fff;font-size:18px;font-weight:900;letter-spacing:-1px;pointer-events:none;text-shadow:1px 1px #111}
+html.rco-enabled nav,html.rco-enabled header,html.rco-enabled [class*="navbar"],html.rco-enabled [class*="Navigation"]{font-family:Arial,Helvetica,sans-serif!important}
+html.rco-enabled [class*="container-main"],html.rco-enabled main{max-width:1180px!important;margin-left:auto!important;margin-right:auto!important}
+html.rco-enabled [class*="section-content"],html.rco-enabled [class*="card"],html.rco-enabled .rco-card,html.rco-enabled [class*="modal"]{background:var(--rco-panel)!important;border:1px solid #c7c7c7!important;border-radius:0!important;box-shadow:0 1px 2px #aaa!important}
+html.rco-enabled h1,html.rco-enabled h2,html.rco-enabled h3{font-family:Arial,Helvetica,sans-serif!important;font-weight:700!important;color:#222!important}
+html.rco-enabled button,html.rco-enabled [role="button"],html.rco-enabled .btn{border-radius:2px!important;font-family:Arial,Helvetica,sans-serif!important;text-shadow:none!important}
+html.rco-enabled input,html.rco-enabled select,html.rco-enabled textarea{border:1px solid #aaa!important;border-radius:1px!important;background:#fff!important;color:#222!important}
+html.rco-enabled a{color:var(--rco-blue)}html.rco-enabled img{border-radius:0!important}
+html.rco-enabled .rco-play,html.rco-enabled .rco-buy{background:linear-gradient(#04c761,#02a94f)!important;border:1px solid #018840!important;color:white!important;font-weight:bold!important;box-shadow:inset 0 1px rgba(255,255,255,.35)!important}
+html.rco-enabled [class*="icon-robux"],html.rco-enabled [class*="robux"]{color:#00a550!important}
+html.rco-2016{--rco-blue:#0066a7;--rco-bg:#e1e1e1}
+html.rco-2016 [class*="content"]{border-radius:0!important}
+html.rco-2016 [class*="game-card"],html.rco-2016 .rco-card{transition:none!important}
+html.rco-2019{--rco-blue:#00a2ff;--rco-bg:#f2f4f5;--rco-line:#d4d4d4}
+html.rco-2019 body{background-image:none!important}
+html.rco-2019 [class*="section-content"],html.rco-2019 [class*="card"],html.rco-2019 .rco-card{border-color:#ddd!important;box-shadow:0 1px 3px rgba(0,0,0,.12)!important}
+html.rco-2019 body:before{content:"ROBLOX";letter-spacing:1px}
+/* Create remains untouched by manifest exclusion. */
