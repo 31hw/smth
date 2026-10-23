@@ -36,7 +36,7 @@ const footerLinks = {
 const Footer2016 = () => {
   const s = useFooterStyles({ theme: getTheme() });
   return (
-    <footer className={s.footer}>
+    <footer className={s.footer} data-rbx-chrome="footer">
       <div className={`container mt-4 mb-0 ${s.footerContainer}`}>
         <div className="row justify-content-center">
           {Object.getOwnPropertyNames(footerLinks).map((v) => (

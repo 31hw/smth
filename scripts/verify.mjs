@@ -35,14 +35,40 @@ for (const size of ['16', '32', '48', '128']) {
 }
 
 for (const cs of manifest.content_scripts) {
-  assert.ok(
-    cs.exclude_matches.includes('https://create.roblox.com/*'),
-    'content_scripts must exclude https://create.roblox.com/*'
-  );
   for (const jsRel of cs.js) {
     assert.ok(fs.existsSync(path.join(extDir, jsRel)), `Missing content script ${jsRel}`);
   }
 }
+
+const chromeScript = manifest.content_scripts.find((cs) => cs.js.includes('bundles/content-ui.js'));
+assert.ok(chromeScript, 'Expected the classic UI content script');
+assert.ok(
+  chromeScript.matches.includes('https://create.roblox.com/*'),
+  'bundles/content-ui.js must run on create.roblox.com to mount the classic chrome'
+);
+const excludedChromePaths = chromeScript.exclude_matches || [];
+assert.ok(
+  !excludedChromePaths.some(
+    (pattern) =>
+      pattern.includes('create.roblox.com') ||
+      pattern.includes('/develop') ||
+      pattern.includes('/places') ||
+      pattern.includes('/plus') ||
+      pattern.includes('/upgrades')
+  ),
+  'Native purchase / Plus / Creator Hub pages must not be excluded from the classic chrome'
+);
+assert.ok(
+  excludedChromePaths.some((pattern) => pattern.includes('/game/join')),
+  'Game-launch endpoints should stay excluded from the content scripts'
+);
+const cspRule = rules.find((r) =>
+  r.action?.responseHeaders?.some((h) => h.header === 'content-security-policy')
+);
+assert.ok(
+  cspRule && cspRule.condition.requestDomains.includes('create.roblox.com'),
+  'DNR CSP rule must cover create.roblox.com so the classic chrome can mount there'
+);
 
 const cssContent = fs.readFileSync(path.join(extDir, 'bundles', 'content-ui.css'), 'utf8');
 const cssUrlMatches = [
@@ -83,6 +109,7 @@ assert.deepEqual(badRefs, [], `Unexpected references:\n${badRefs.join('\n')}`);
 for (const caller of themeSetCallers) {
   assert.ok(
     caller === 'src/services/theme.js' ||
+      caller === 'src/services/themeSync.js' ||
       caller === 'src/AppRouter.js' ||
       caller === 'src/components/myAccount2016/components/accountInfo.js',
     `Theme must ONLY be changeable in Settings (/My/Account), but found setter in: ${caller}`
@@ -98,37 +125,216 @@ assert.ok(popupHtml.includes('https://www.roblox.com/My/Account'), 'popup.html m
 assert.ok(!/<select\b|data-era|data-theme|rbx_classic_theme|rbx_classic_era/i.test(popupHtml + popupJs), 'popup must not contain theme/era controls');
 console.log('  [OK] popup.html & popup.js verified (overlay toggle only; theme directed to /My/Account)');
 
-console.log('\n=== 2. Verifying Create Route Exclusion ===');
+console.log('\n=== 2. Verifying Original HTML + Classic Chrome Wrapping ===');
 
 const earlyMainSrc = fs.readFileSync(path.join(extDir, 'early-main.js'), 'utf8');
 const vendorSrc = fs.readFileSync(path.join(extDir, 'bundles', 'vendor-3d.js'), 'utf8');
 const contentUiSrc = fs.readFileSync(path.join(extDir, 'bundles', 'content-ui.js'), 'utf8');
 
-for (const excludedUrl of [
-  'https://create.roblox.com/',
-  'https://create.roblox.com/dashboard/creations',
+function createNativeDom(url, { evalEarly = true } = {}) {
+  const dom = new JSDOM(
+    '<!doctype html><html><head><title>Modern Roblox</title></head><body><div id="modern-roblox-native">MODERN ROBLOX NATIVE HTML</div></body></html>',
+    { url, runScripts: 'outside-only', pretendToBeVisual: true }
+  );
+  const win = dom.window;
+  Object.defineProperty(win, 'innerWidth', { configurable: true, value: 1440 });
+  Object.defineProperty(win, 'innerHeight', { configurable: true, value: 900 });
+  win.scrollTo = () => {};
+  win.matchMedia = () => ({
+    matches: false,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  });
+  win.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  win.IntersectionObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+  win.fetch = async () => new Response('', { status: 200 });
+  const nativeRect = win.Element.prototype.getBoundingClientRect;
+  win.Element.prototype.getBoundingClientRect = function () {
+    const base = nativeRect.call(this);
+    const match = (selector) => {
+      try {
+        return typeof this.matches === 'function' && this.matches(selector);
+      } catch (_) {
+        return false;
+      }
+    };
+    if (match('[data-rbx-chrome="navbar"]')) {
+      return { ...base, width: 1440, height: 40, top: 0, left: 0, right: 1440, bottom: 40 };
+    }
+    if (match('[data-rbx-chrome="footer"]')) {
+      return { ...base, width: 1440, height: 100, top: 800, left: 0, right: 1440, bottom: 900 };
+    }
+    if (match('[data-rbx-chrome="sidebar-card"]')) {
+      return { ...base, width: 175, height: 900, top: 0, left: 0, right: 175, bottom: 900 };
+    }
+    return base;
+  };
+  win.chrome = {
+    runtime: {
+      id: 'testedgeextensionid',
+      lastError: null,
+      getURL: (p) => `chrome-extension://testedgeextensionid/${String(p).replace(/^\/+/, '')}`,
+      sendMessage: (msg, cb) => {
+        const data =
+          msg && msg.url === 'https://users.roblox.com/v1/users/authenticated'
+            ? { id: 261, name: 'Shedletsky', displayName: 'Shedletsky' }
+            : {};
+        Promise.resolve().then(() =>
+          cb({ status: 200, headers: {}, data, csrfToken: 'csrf-native-token' })
+        );
+      },
+    },
+    storage: {
+      local: {
+        get: (_keys, cb) => cb({}),
+        set: (_patch, cb) => {
+          if (cb) cb();
+        },
+      },
+      onChanged: {
+        addListener: () => {},
+        removeListener: () => {},
+      },
+    },
+  };
+  if (evalEarly) win.eval(earlyMainSrc);
+  win.eval(contentUiSrc);
+  return dom;
+}
+
+const wrappedNativeUrls = [
+  'https://www.roblox.com/plus',
+  'https://www.roblox.com/premium/membership',
+  'https://www.roblox.com/upgrade',
+  'https://www.roblox.com/upgrades/robux',
+  'https://www.roblox.com/upgrades/paymentmethods',
+  'https://www.roblox.com/upgrades/redeem',
+  'https://www.roblox.com/modcreditagreement/957e398b-e2a0-49aa-aefe-c5a6ad22f3a2',
+  'https://www.roblox.com/login?returnUrl=https%3A%2F%2Fapis.roblox.com%2Foauth%2Fv1%2Fauthorize%3Fclient_id%3D1',
   'https://www.roblox.com/develop',
   'https://www.roblox.com/en-us/create',
   'https://www.roblox.com/places/192800/update',
   'https://www.roblox.com/game-pass/configure?id=1234',
-  'https://www.roblox.com/plus',
-  'https://www.roblox.com/premium/membership',
-  'https://www.roblox.com/upgrade',
-  'https://www.roblox.com/upgrades/paymentmethods',
-  'https://www.roblox.com/modcreditagreement/957e398b-e2a0-49aa-aefe-c5a6ad22f3a2',
-  'https://www.roblox.com/home?rbx_native=1',
-]) {
-  const dom = new JSDOM(
-    '<!doctype html><html><head><title>Creator Hub</title></head><body><div id="modern-create-hub">Native Create UI</div></body></html>',
-    { url: excludedUrl, runScripts: 'outside-only', pretendToBeVisual: true }
+  'https://create.roblox.com/',
+  'https://create.roblox.com/dashboard/creations',
+];
+
+for (const wrappedUrl of wrappedNativeUrls) {
+  const dom = createNativeDom(wrappedUrl);
+  const win = dom.window;
+  const expectedHost = new URL(wrappedUrl).hostname === 'create.roblox.com' ? 'create' : 'www';
+  await new Promise((r) => setTimeout(r, 220));
+
+  assert.ok(
+    win.document.getElementById('modern-roblox-native'),
+    `Original native HTML must be preserved on ${wrappedUrl}`
   );
-  dom.window.eval(earlyMainSrc);
-  dom.window.eval(contentUiSrc);
-  await new Promise((r) => setTimeout(r, 25));
-  assert.ok(dom.window.document.getElementById('modern-create-hub'));
-  assert.equal(dom.window.document.getElementById('__next'), null);
+  assert.equal(win.document.getElementById('__next'), null, `Full classic UI must not replace ${wrappedUrl}`);
+  assert.equal(
+    win.document.documentElement.dataset.rbxClassicChrome,
+    '1',
+    `Expected classic chrome mode on ${wrappedUrl}`
+  );
+
+  const host = win.document.getElementById('rbx-classic-chrome');
+  assert.ok(host, `Expected #rbx-classic-chrome host on ${wrappedUrl}`);
+  assert.ok(host.shadowRoot, `Expected a shadow root for the classic chrome on ${wrappedUrl}`);
+  assert.ok(
+    host.shadowRoot.querySelector('[data-rbx-chrome="navbar"]'),
+    `Expected the classic navbar inside the chrome on ${wrappedUrl}`
+  );
+  assert.ok(
+    host.shadowRoot.querySelector('[data-rbx-chrome="footer"]'),
+    `Expected the classic footer inside the chrome on ${wrappedUrl}`
+  );
+  assert.ok(
+    host.shadowRoot.textContent.includes('Games') &&
+      host.shadowRoot.textContent.includes('Catalog') &&
+      host.shadowRoot.textContent.includes('Robux'),
+    `Expected classic navigation links inside the chrome on ${wrappedUrl}`
+  );
+  assert.ok(
+    host.shadowRoot.querySelector('[data-rbx-chrome="sidebar-card"]'),
+    `Expected the signed-in classic sidebar inside the chrome on ${wrappedUrl}`
+  );
+  assert.ok(
+    host.shadowRoot.textContent.includes('Shedletsky'),
+    `Expected the signed-in username inside the chrome on ${wrappedUrl}`
+  );
+  assert.ok(
+    host.shadowRoot.querySelectorAll('style[data-jss]').length > 0,
+    `Expected scoped JSS styles inside the shadow root on ${wrappedUrl}`
+  );
+  assert.equal(
+    win.document.querySelectorAll('nav.navbar').length,
+    0,
+    `Classic styles must stay inside the shadow root on ${wrappedUrl}`
+  );
+  const layoutStyle = win.document.getElementById('rbx-classic-chrome-layout');
+  assert.ok(layoutStyle, `Expected the native-page offset stylesheet on ${wrappedUrl}`);
+  assert.ok(
+    /padding-top:\s*var\(--rbx-chrome-top/.test(layoutStyle.textContent) &&
+      /padding-left:\s*var\(--rbx-chrome-left/.test(layoutStyle.textContent) &&
+      /padding-bottom:\s*var\(--rbx-chrome-footer/.test(layoutStyle.textContent),
+    `Expected the page to be offset by the measured chrome on ${wrappedUrl}`
+  );
+  assert.equal(
+    win.document.documentElement.style.getPropertyValue('--rbx-chrome-top'),
+    '40px',
+    `Expected the classic navbar height to offset the page on ${wrappedUrl}`
+  );
+  assert.equal(
+    win.document.documentElement.style.getPropertyValue('--rbx-chrome-left'),
+    '175px',
+    `Expected the classic sidebar width to offset the page on ${wrappedUrl}`
+  );
+  assert.ok(
+    parseInt(win.document.documentElement.style.getPropertyValue('--rbx-chrome-footer'), 10) >= 100,
+    `Expected the classic footer height to offset the page bottom on ${wrappedUrl}`
+  );
+  assert.equal(
+    host.style.height,
+    '900px',
+    `Expected the chrome host to span the document on ${wrappedUrl}`
+  );
+  assert.equal(
+    host.getAttribute('data-rbx-chrome-host'),
+    expectedHost,
+    `Unexpected chrome host kind on ${wrappedUrl}`
+  );
+
   dom.window.close();
-  console.log(`  [OK] Untouched as required: ${excludedUrl}`);
+  console.log(`  [OK] Original HTML preserved + classic chrome mounted: ${wrappedUrl}`);
+}
+
+for (const nativeUrl of [
+  'https://www.roblox.com/home?rbx_native=1',
+  'https://www.roblox.com/games/start?placeId=192800',
+  'https://www.roblox.com/game/join?placeId=192800',
+]) {
+  const dom = createNativeDom(nativeUrl);
+  const win = dom.window;
+  await new Promise((r) => setTimeout(r, 150));
+  assert.ok(win.document.getElementById('modern-roblox-native'), `Expected untouched page on ${nativeUrl}`);
+  assert.equal(win.document.getElementById('__next'), null, `Unexpected classic UI on ${nativeUrl}`);
+  assert.equal(
+    win.document.getElementById('rbx-classic-chrome'),
+    null,
+    `No classic chrome on hard-native flow ${nativeUrl}`
+  );
+  assert.equal(win.document.documentElement.dataset.rbxClassicChrome, undefined);
+  dom.window.close();
+  console.log(`  [OK] Hard-native flow left completely untouched: ${nativeUrl}`);
 }
 
 console.log('\n=== 3. Verifying DOM Replacement, Settings-Only Theme Sync & All Classic Routes ===');
@@ -535,8 +741,6 @@ const testRoutes = [
   '/My/Item.aspx?id=10472779',
   '/My/CurrencyExchange.aspx',
   '/collectibles',
-  '/upgrades/robux',
-  '/plus?rbx_native=1',
   '/BuildersClub/Upgrade.ashx',
   '/Badges.aspx',
   '/Forum/Default.aspx',
@@ -679,12 +883,6 @@ for (const era of ['2019', '2016']) {
       assert.ok(
         nextNode.textContent.includes('builderman'),
         `Expected friend names to render on [${era}] /users/261/friends`
-      );
-    }
-    if (route === '/upgrades/robux') {
-      assert.ok(
-        nextNode.textContent.includes('Buy Robux'),
-        `Expected custom Buy Robux layout on [${era}] /upgrades/robux`
       );
     }
     if (route === '/My/Avatar' && era === '2019') {

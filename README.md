@@ -18,19 +18,19 @@ The repository root itself **is** the unpacked extension and contains all UI sou
 
 ## Features & Scope
 
-- **49 Classic 2016 + 2019 Routes:** Home, Games, Experience Details (with native `roblox-player:` launch via `auth.roblox.com/v1/authentication-ticket`), Catalog, Asset/Bundle/Game Pass Details, Collectibles, 3D/2D Avatar Editor, Profiles, Friends, Inventory, Favorites, Groups & Group Admin, Messages, Money & Transactions, Trades, Promo Codes, Badges, Developer Forum, Buy Robux, and Account Settings.
-- **Native Upgrade / Plus:** `/plus`, `/premium/*`, `/upgrade`, `/upgrades/paymentmethods` and `/modcreditagreement/*` stay on Roblox's original native Plus / payment pages (no 404s), while `/BuildersClub/Upgrade.ashx` forwards to Roblox Plus.
-- **Classic Buy Robux Page:** `/upgrades/robux` renders the classic Robux store layout with live balances and real Roblox checkout links; the navbar tab is **Robux** (replacing the old Builders Club tab).
+- **47 Classic 2016 + 2019 Routes:** Home, Games, Experience Details (with native `roblox-player:` launch via `auth.roblox.com/v1/authentication-ticket`), Catalog, Asset/Bundle/Game Pass Details, Collectibles, 3D/2D Avatar Editor, Profiles, Friends, Inventory, Favorites, Groups & Group Admin, Messages, Money & Transactions, Trades, Promo Codes, Badges, Developer Forum, and Account Settings.
+- **Original purchase pages + classic chrome:** `/plus`, `/premium/*`, `/upgrade`, `/upgrades/robux`, `/upgrades/paymentmethods`, `/upgrades/redeem` and `/modcreditagreement/*` keep Roblox's original HTML (so payments and Robux purchases really work) while the classic navbar, sidebar and footer are rendered around them. `/BuildersClub/Upgrade.ashx` forwards to Roblox Plus.
+- **Robux Navbar Tab:** the classic navbar tab is labelled **Robux** (replacing the old Builders Club tab) and opens the original Roblox Buy Robux page inside the classic chrome.
 - **Working Catalog:** Featured shows recent items by ROBLOX, Emotes shows live emote animations, and every Body Parts / Clothing / Gear / Collectibles sub-tab works with Creator, Price, Genre, Free and Off-Sale filters.
 - **Working Avatar Editor:** Recent / Clothing / Body / Animations / Outfits lists load owned assets through live inventory + avatar-inventory endpoints, including bundles/packages, dynamic heads, layered clothing and gear.
 - **Roblox Developer Forum:** Forums read live `devforum.roblox.com` categories, topics and posts (not the retired forum API), with working avatars, pagination and direct DevForum posting links.
 - **Messages:** Inbox / Sent / Notifications / Archive load from `privatemessages.roblox.com`, with working read/archive actions and safely sanitized HTML announcements (links keep working).
 - **Friends:** Friend lists and the dashboard show full avatars (not headshots) with names and verified badges.
 - **Optimized Footprint:**
-  - `bundles/content-ui.js` (`~881 KB`) + pruned `bundles/content-ui.css` (`~73 KB`) load on replaced pages.
+  - `bundles/content-ui.js` (`~921 KB`) + pruned `bundles/content-ui.css` (`~73 KB`) load on replaced pages.
   - `bundles/vendor-3d.js` (`~555 KB`, tree-shaken Three.js r137 + Roblox OBJ/MTL loaders) is **lazy-loaded on demand** only when viewing a 3D avatar.
-  - `public/` (`~845 KB`) holds all classic fonts (`Gotham SSm`) and authentic 2016/2019 revival logos, sprites & icons.
-- **Roblox Create Untouched:** `create.roblox.com` and `/create`, `/develop`, `/build`, `/places/*`, `/universes/*`, `/game-pass/configure`, `/ide/*`, `/my/createuserad.aspx` are excluded and stay on native Roblox Create.
+  - `public/` (`~833 KB`) holds all classic fonts (`Gotham SSm`) and authentic 2016/2019 revival logos, sprites & icons.
+- **Roblox Create supported:** `create.roblox.com` and `/create`, `/develop`, `/build`, `/places/*`, `/universes/*`, `/game-pass/configure`, `/ide/*`, `/my/createuserad.aspx` keep Roblox's original Creator Hub HTML, now wrapped with the classic chrome. Only game-launch endpoints (`/games/start`, `/game/join`, `/game/placelauncher`, `/login/negotiate`) and explicit `?rbx_native=1` stay 100% untouched.
 - **Theme Changed Only in Settings (`/My/Account`):** Theme (`Light`, `Dark (2019)`, `OBC Dark (2016)`) and UI Era (`2019` / `2016`) are changed exclusively in **Account Settings (`/My/Account`)**, and sync Light/Dark directly with your Roblox account via `PATCH https://accountsettings.roblox.com/v1/themes/user`.
 
 ---

@@ -73,7 +73,7 @@ const Navbar = () => {
 
   return (
     <div className={`${s.wrapper} navbar-wrapper-main`}>
-      <nav className={`navbar fixed-top navbar-expand-lg ${s.navbar}`} ref={mainNavBarRef}>
+      <nav className={`navbar fixed-top navbar-expand-lg ${s.navbar}`} data-rbx-chrome="navbar" ref={mainNavBarRef}>
         <div className={`${s.navContainer} container`}>
           <div className={`${s.row} ${s.rowOne} row`}>
             <div className={`${s.column} col-12 col-lg-12`}>

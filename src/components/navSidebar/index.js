@@ -135,6 +135,7 @@ const NavSideBar = () => {
       {dimensions.width <= 1324 && (
         <button
           className={s.hamburgerButton}
+          data-rbx-chrome="sidebar-toggle"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle side navigation"
         >
@@ -142,8 +143,8 @@ const NavSideBar = () => {
         </button>
       )}
       {isOpen && (
-        <div className={s.container}>
-          <div className={s.card} style={{ marginTop: dimensions.width <= 1324 ? '0' : '12px' }}>
+        <div className={s.container} data-rbx-chrome="sidebar">
+          <div className={s.card} data-rbx-chrome="sidebar-card" style={{ marginTop: dimensions.width <= 1324 ? '0' : '12px' }}>
             <a href={`/users/${authStore.userId}/profile`} className={s.username}>
               <div className={s.Wrapheadshot}>
                 <PlayerHeadshot id={authStore.userId} name={authStore.username} />

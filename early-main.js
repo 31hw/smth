@@ -20,9 +20,12 @@
   function shouldIntercept() {
     const loc = window.location;
     if (!loc) return false;
+    if (window.top !== window.self) return false;
     const host = (loc.hostname || '').toLowerCase();
-    // Never replace Roblox Create!
-    if (host === 'create.roblox.com') return false;
+    // Only classic Roblox web pages are replaced; Creator Hub keeps its own HTML.
+    if (host !== 'www.roblox.com' && host !== 'web.roblox.com' && host !== 'roblox.com') {
+      return false;
+    }
     if ((loc.search || '').includes('rbx_native=1')) return false;
 
     try {
@@ -34,38 +37,61 @@
     }
 
     const p = stripLocale(loc.pathname).toLowerCase();
-    const createPrefixes = [
-      '/create',
-      '/develop',
-      '/build',
-      '/places/',
-      '/universes/',
-      '/game-pass/configure',
-      '/ide/',
-      '/my/createuserad.aspx',
-    ];
-    for (const prefix of createPrefixes) {
-      if (p === prefix || p.startsWith(prefix.endsWith('/') ? prefix : prefix + '/')) {
-        return false;
-      }
-    }
-    if (/^\/users\/\d+\/canmanage(\/|$)/i.test(p)) return false;
 
-    const passthrough = [
-      '/games/start',
-      '/game/placelauncher',
-      '/game/join',
-      '/login/negotiate',
-      '/plus',
-      '/premium',
-      '/upgrade',
-      '/upgrades/paymentmethods',
-      '/upgrades/redeem',
-      '/modcreditagreement',
-    ];
-    for (const prefix of passthrough) {
-      if (p === prefix || p.startsWith(prefix + '/')) return false;
+    // Keep Roblox's original login form whenever a returnUrl must survive
+    // (Creator Hub OAuth, game joins, purchases with captcha/passkeys).
+    const isLoginPath =
+      p === '/login' ||
+      p === '/newlogin' ||
+      p === '/login/forgot-password-or-username' ||
+      p.startsWith('/account/signup');
+    if (isLoginPath && /(?:^|[?&])returnurl=/i.test(loc.search || '')) {
+      return false;
     }
+
+    const matchesPrefix = (prefixes) =>
+      prefixes.some(
+        (prefix) =>
+          p === prefix || p.startsWith(prefix.endsWith('/') ? prefix : prefix + '/')
+      );
+
+    // Flows that must always stay native (game launch, login negotiation).
+    if (
+      matchesPrefix([
+        '/games/start',
+        '/game/placelauncher',
+        '/game/join',
+        '/login/negotiate',
+      ])
+    ) {
+      return false;
+    }
+
+    // Pages that keep Roblox's original HTML and get the classic chrome around
+    // them instead (Plus, payments, Robux purchases, Creator Hub, place config).
+    if (
+      matchesPrefix([
+        '/plus',
+        '/premium',
+        '/upgrade',
+        '/upgrades',
+        '/robux',
+        '/buyrobux',
+        '/modcreditagreement',
+        '/create',
+        '/develop',
+        '/build',
+        '/places/',
+        '/universes/',
+        '/game-pass/configure',
+        '/ide/',
+        '/my/createuserad.aspx',
+      ])
+    ) {
+      return false;
+    }
+
+    if (/^\/users\/\d+\/canmanage(\/|$)/i.test(p)) return false;
 
     return true;
   }

@@ -1,5 +1,76 @@
 import { useEffect, useMemo, useState } from 'react';
-import { isCreateRoute, isNativePassthroughRoute, matchRoute } from '../routeMeta';
+import {
+  isChromeOnlyRoute,
+  isCreateRoute,
+  isHardPassthroughRoute,
+  matchRoute,
+} from '../routeMeta';
+
+
+function isChromeMode() {
+  return (
+    typeof document !== 'undefined' &&
+    document.documentElement &&
+    document.documentElement.dataset.rbxClassicChrome === '1'
+  );
+}
+
+function isCreateHost() {
+  return (
+    typeof window !== 'undefined' &&
+    (window.location.hostname || '').toLowerCase() === 'create.roblox.com'
+  );
+}
+
+function isClassicAnchorEvent(e) {
+  if (!e) return false;
+  let path = [];
+  try {
+    path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+  } catch (_) {
+    path = [];
+  }
+  if (path.some((node) => node && node.id === 'rbx-classic-chrome')) return true;
+  if (path.some((node) => node && node.id === '__next')) return true;
+  const target = e.target;
+  if (target && typeof target.closest === 'function') {
+    if (target.closest('#__next')) return true;
+  }
+  return false;
+}
+
+function findAnchor(e) {
+  let path = [];
+  try {
+    path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+  } catch (_) {
+    path = [];
+  }
+  for (const node of path) {
+    if (node && node.nodeType === 1 && node.tagName === 'A' && node.hasAttribute('href')) {
+      return node;
+    }
+  }
+  const target = e.target;
+  if (target && typeof target.closest === 'function') {
+    return target.closest('a[href]');
+  }
+  return null;
+}
+
+function navigateWholePage(href) {
+  if (typeof window === 'undefined' || !href) return;
+  if (isCreateHost() && typeof href === 'string' && href.charAt(0) === '/') {
+    window.location.href = 'https://www.roblox.com' + href;
+    return;
+  }
+  window.location.href = href;
+}
+
+function resolveCreateTarget(href) {
+  if (/^https?:\/\/create\.roblox\.com/i.test(href)) return href;
+  return 'https://create.roblox.com/';
+}
 
 const listeners = new Set();
 const eventHandlers = {
@@ -46,12 +117,17 @@ if (typeof window !== 'undefined') {
     emitEvent('routeChangeComplete', window.location.pathname + window.location.search);
   });
 
-  // Global delegated link interceptor so plain <a href="/..."> links also navigate cleanly
+  // Global delegated link interceptor so plain <a href="/..."> links also navigate cleanly.
+  // It only acts on clicks that originate inside the classic UI (#__next) or the
+  // classic chrome shadow root, so native Roblox pages keep every one of their
+  // own links / SPA handlers untouched.
   document.addEventListener('click', (e) => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
       return;
     }
-    const anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!isClassicAnchorEvent(e)) return;
+
+    const anchor = findAnchor(e);
     if (!anchor) return;
     if (anchor.target && anchor.target !== '_self') return;
     if (anchor.hasAttribute('download')) return;
@@ -60,19 +136,28 @@ if (typeof window !== 'undefined') {
     if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:')) return;
     if (/^(roblox|roblox-player|mailto|tel):/i.test(rawHref)) return;
 
-    // Route Roblox Create links straight to official Roblox Creator Hub (not replaced!)
+    // Links into Roblox Creator Hub open Creator Hub (now wrapped with the
+    // classic chrome, never replaced).
     if (isCreateRoute(rawHref)) {
+      if (isCreateHost()) return; // let Creator Hub handle its own navigation
       e.preventDefault();
-      if (typeof window !== 'undefined' && window.location.hostname.endsWith('roblox.com')) {
-        window.location.href = 'https://create.roblox.com/';
-      } else {
-        window.open('https://create.roblox.com/', '_blank', 'noopener');
-      }
+      navigateWholePage(resolveCreateTarget(rawHref));
       return;
     }
 
-    // Route native Upgrade / Roblox Premium (Plus) / Buy Robux links straight to Roblox's native page
-    if (isNativePassthroughRoute(rawHref)) {
+    // Plus / payment / Robux purchase / place configuration pages keep their
+    // original HTML, so they need a real top-level navigation to get the
+    // classic chrome mounted around them.
+    if (isChromeOnlyRoute(rawHref) || isHardPassthroughRoute(rawHref)) {
+      e.preventDefault();
+      navigateWholePage(rawHref);
+      return;
+    }
+
+    // Inside the classic chrome every navigation is a real page load.
+    if (isChromeMode()) {
+      e.preventDefault();
+      navigateWholePage(rawHref);
       return;
     }
 
@@ -113,16 +198,19 @@ export function navigateInternal(rawUrl, replace = false) {
   const url = resolveHrefInput(rawUrl);
 
   if (isCreateRoute(url)) {
-    if (window.location.hostname.endsWith('roblox.com')) {
-      window.location.href = 'https://create.roblox.com/';
-    } else {
-      window.open('https://create.roblox.com/', '_blank', 'noopener');
-    }
+    window.location.href = resolveCreateTarget(url);
     return Promise.resolve(true);
   }
 
-  if (isNativePassthroughRoute(url)) {
-    window.location.href = url;
+  if (isChromeOnlyRoute(url) || isHardPassthroughRoute(url)) {
+    navigateWholePage(url);
+    return Promise.resolve(true);
+  }
+
+  // The classic chrome has no page renderer, so every link inside it must load
+  // a real page (which then lets the full classic UI take over).
+  if (isChromeMode()) {
+    navigateWholePage(url);
     return Promise.resolve(true);
   }
 

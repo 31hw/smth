@@ -28,21 +28,49 @@ const CREATE_PATH_PREFIXES = [
   '/my/createuserad.aspx',
 ];
 
-// Native Roblox endpoints/flows we should never hijack as UI pages (including native Upgrade / Plus / Payment / Agreement pages)
-const NATIVE_PASSTHROUGH_PREFIXES = [
+// Flows that must always stay 100% native (launching games, login negotiation).
+// Wrapping these would break game launch / auth hand-offs.
+const HARD_PASSTHROUGH_PREFIXES = [
   '/games/start',
   '/game/placelauncher',
   '/game/join',
   '/login/negotiate',
+];
+
+// Roblox-owned flows that keep their original modern HTML, but get the classic
+// navbar + sidebar + footer rendered around them. Payment / Plus / Robux and
+// all of Creator Hub live here so purchases and Creator features keep working.
+const CHROME_ONLY_PREFIXES = [
   '/plus',
   '/premium',
   '/upgrade',
-  '/upgrades/paymentmethods',
-  '/upgrades/redeem',
+  '/upgrades',
+  '/robux',
+  '/buyrobux',
   '/modcreditagreement',
+  ...CREATE_PATH_PREFIXES,
 ];
 
-export function isNativePassthroughRoute(urlOrPath) {
+function matchesPrefixes(pathname, prefixes) {
+  return prefixes.some(
+    (prefix) =>
+      pathname === prefix || pathname.startsWith(prefix.endsWith('/') ? prefix : prefix + '/')
+  );
+}
+
+function isReturnUrlLoginFlow(loc) {
+  if (!loc) return false;
+  const p = stripLocalePrefix(loc.pathname || '/').toLowerCase();
+  const isLoginPath =
+    p === '/login' ||
+    p === '/newlogin' ||
+    p === '/login/forgot-password-or-username' ||
+    p.startsWith('/account/signup');
+  if (!isLoginPath) return false;
+  return /(?:^|[?&])returnurl=/i.test(loc.search || '');
+}
+
+export function isHardPassthroughRoute(urlOrPath) {
   if (!urlOrPath || typeof urlOrPath !== 'string') return false;
   if (urlOrPath.includes('rbx_native=1')) return true;
   try {
@@ -50,17 +78,53 @@ export function isNativePassthroughRoute(urlOrPath) {
       const u = new URL(urlOrPath);
       const host = u.hostname.toLowerCase();
       if (host && host !== 'www.roblox.com' && host !== 'web.roblox.com' && host !== 'roblox.com') {
-        return true;
+        return false;
       }
-      const p = stripLocalePrefix(u.pathname).toLowerCase();
-      return NATIVE_PASSTHROUGH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + '/'));
+      return matchesPrefixes(stripLocalePrefix(u.pathname).toLowerCase(), HARD_PASSTHROUGH_PREFIXES);
     }
   } catch (_) {
     // ignore malformed URL
   }
   const pathOnly = urlOrPath.split('?')[0].split('#')[0];
-  const p = stripLocalePrefix(pathOnly).toLowerCase();
-  return NATIVE_PASSTHROUGH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + '/'));
+  return matchesPrefixes(stripLocalePrefix(pathOnly).toLowerCase(), HARD_PASSTHROUGH_PREFIXES);
+}
+
+export function isChromeOnlyPathname(pathname) {
+  const p = stripLocalePrefix(pathname || '/').toLowerCase();
+  if (matchesPrefixes(p, CHROME_ONLY_PREFIXES)) return true;
+  if (/^\/users\/\d+\/canmanage(\/|$)/i.test(p)) return true;
+  return false;
+}
+
+/**
+ * True for Roblox pages whose original HTML must stay intact but should be
+ * surrounded by the classic navbar / sidebar / footer (Plus, payments, Robux
+ * purchases, Creator Hub, place configuration, ...).
+ */
+export function isChromeOnlyRoute(urlOrPath) {
+  if (!urlOrPath || typeof urlOrPath !== 'string') return false;
+  if (urlOrPath.includes('rbx_native=1')) return false;
+  try {
+    if (/^https?:\/\//i.test(urlOrPath)) {
+      const u = new URL(urlOrPath);
+      const host = u.hostname.toLowerCase();
+      if (host === 'create.roblox.com') return true;
+      if (host !== 'www.roblox.com' && host !== 'web.roblox.com' && host !== 'roblox.com') {
+        return false;
+      }
+      if ((u.search || '').includes('rbx_native=1')) return false;
+      return isChromeOnlyPathname(u.pathname);
+    }
+  } catch (_) {
+    // ignore malformed URL
+  }
+  const pathOnly = urlOrPath.split('?')[0].split('#')[0];
+  return isChromeOnlyPathname(pathOnly);
+}
+
+// Kept for the router shim: these targets need a real top-level navigation.
+export function isNativePassthroughRoute(urlOrPath) {
+  return isChromeOnlyRoute(urlOrPath) || isHardPassthroughRoute(urlOrPath);
 }
 
 export function isCreateRoute(urlOrPath) {
@@ -80,27 +144,47 @@ export function isCreateRoute(urlOrPath) {
 
 export function isCreatePathname(rawPathname) {
   const p = stripLocalePrefix(rawPathname).toLowerCase();
-  if (CREATE_PATH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix.endsWith('/') ? prefix : prefix + '/'))) {
-    return true;
-  }
+  if (matchesPrefixes(p, CREATE_PATH_PREFIXES)) return true;
   if (/^\/users\/\d+\/canmanage(\/|$)/i.test(p)) return true;
   return false;
 }
 
+/**
+ * Pages the extension fully replaces with the classic UI.
+ */
 export function shouldInterceptLocation(loc) {
   if (!loc) return false;
   const host = (loc.hostname || '').toLowerCase();
-  if (host === 'create.roblox.com') return false;
-
-  const search = loc.search || '';
-  if (search.includes('rbx_native=1')) return false;
-
-  const p = stripLocalePrefix(loc.pathname || '/').toLowerCase();
-  if (isCreatePathname(p)) return false;
-  if (NATIVE_PASSTHROUGH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + '/'))) {
+  if (host !== 'www.roblox.com' && host !== 'web.roblox.com' && host !== 'roblox.com') {
     return false;
   }
+
+  if ((loc.search || '').includes('rbx_native=1')) return false;
+
+  // OAuth / create / game-join return logins must keep Roblox's original login
+  // form so captcha, passkeys and the returnUrl round-trip keep working.
+  if (isReturnUrlLoginFlow(loc)) return false;
+
+  const p = stripLocalePrefix(loc.pathname || '/').toLowerCase();
+  if (isChromeOnlyPathname(p)) return false;
+  if (matchesPrefixes(p, HARD_PASSTHROUGH_PREFIXES)) return false;
   return true;
+}
+
+/**
+ * Pages that keep Roblox's original HTML but receive the classic chrome.
+ */
+export function shouldMountChrome(loc) {
+  if (!loc) return false;
+  if ((loc.search || '').includes('rbx_native=1')) return false;
+
+  const host = (loc.hostname || '').toLowerCase();
+  if (host === 'create.roblox.com') return true;
+  if (host !== 'www.roblox.com' && host !== 'web.roblox.com' && host !== 'roblox.com') {
+    return false;
+  }
+  if (isReturnUrlLoginFlow(loc)) return true;
+  return isChromeOnlyPathname(loc.pathname || '/');
 }
 
 // Ordered route definitions mapping classic + modern Roblox URLs to extracted page keys
@@ -154,7 +238,6 @@ const ROUTE_DEFS = [
   { key: '/Badges.aspx', regex: /^\/badges(?:\.aspx)?(?:\/(\d+)(?:\/([^/?#]*))?)?$/i, params: ['badgeId', 'name'] },
   { key: '/collectibles', regex: /^\/(?:collectibles|internal\/collectibles)$/i, params: [] },
   { key: '/promocodes', regex: /^\/(?:promocodes|redeem)$/i, params: [] },
-  { key: '/upgrades/robux', regex: /^\/upgrades\/robux$/i, params: [] },
   { key: '/BuildersClub/Upgrade.ashx', regex: /^\/(?:buildersclub\/upgrade\.ashx|internal\/membership)$/i, params: [] },
   { key: '/internal/report-center', regex: /^\/(?:internal\/report-center|abusereport(?:\/.*)?)$/i, params: [] },
 

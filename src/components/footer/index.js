@@ -80,7 +80,7 @@ const Footer = () => {
   }
   const s = useFooterStyles2({ theme: getTheme() });
   return (
-    <footer className={s.footerContainer}>
+    <footer className={s.footerContainer} data-rbx-chrome="footer">
       <div className={s.footer}>
         <ul className={s.footerLinks}>
           {Object.getOwnPropertyNames(footerLinks).map((v) => (

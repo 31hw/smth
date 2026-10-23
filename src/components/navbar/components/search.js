@@ -161,9 +161,13 @@ const Search = () => {
 
   useEffect(() => {
     const onDocClick = (e) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        setShowDropdown(false);
-      }
+      // composedPath() keeps this working when the navbar is rendered inside
+      // the classic chrome's shadow root (e.target is retargeted to the host).
+      const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+      const inside = wrapRef.current
+        ? path.includes(wrapRef.current) || wrapRef.current.contains(e.target)
+        : false;
+      if (!inside) setShowDropdown(false);
     };
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);

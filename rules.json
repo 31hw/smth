@@ -18,10 +18,19 @@
       ]
     },
     "condition": {
-      "requestDomains": ["roblox.com"],
-      "excludedRequestDomains": ["create.roblox.com", "devforum.roblox.com"],
-      "excludedInitiatorDomains": ["create.roblox.com"],
-      "resourceTypes": ["xmlhttprequest"]
+      "requestDomains": [
+        "roblox.com"
+      ],
+      "excludedRequestDomains": [
+        "create.roblox.com",
+        "devforum.roblox.com"
+      ],
+      "excludedInitiatorDomains": [
+        "create.roblox.com"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest"
+      ]
     }
   },
   {
@@ -41,9 +50,14 @@
       ]
     },
     "condition": {
-      "requestDomains": ["www.roblox.com", "web.roblox.com"],
-      "excludedRequestDomains": ["create.roblox.com"],
-      "resourceTypes": ["main_frame"]
+      "requestDomains": [
+        "www.roblox.com",
+        "web.roblox.com",
+        "create.roblox.com"
+      ],
+      "resourceTypes": [
+        "main_frame"
+      ]
     }
   },
   {
@@ -76,8 +90,12 @@
       ]
     },
     "condition": {
-      "requestDomains": ["devforum.roblox.com"],
-      "resourceTypes": ["xmlhttprequest"]
+      "requestDomains": [
+        "devforum.roblox.com"
+      ],
+      "resourceTypes": [
+        "xmlhttprequest"
+      ]
     }
   }
 ]

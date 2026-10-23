@@ -3,7 +3,7 @@
   "name": "Classic Roblox UI (2016 & 2019)",
   "short_name": "Classic Roblox",
   "version": "1.0.0",
-  "description": "Replaces modern Roblox web pages with the classic 2016 & 2019 ROBLOX UI powered by live Roblox endpoints (leaves Roblox Create untouched).",
+  "description": "Restores the classic 2016 & 2019 ROBLOX UI using live Roblox endpoints. Plus, Robux purchases, payments and Roblox Create keep their original HTML inside the classic navbar, sidebar and footer.",
   "minimum_edge_version": "102.0",
   "icons": {
     "16": "icons/icon16.png",
@@ -49,39 +49,42 @@
         "https://www.roblox.com/*",
         "https://web.roblox.com/*"
       ],
-      "exclude_matches": [
-        "https://create.roblox.com/*",
-        "https://www.roblox.com/create*",
-        "https://www.roblox.com/develop*",
-        "https://www.roblox.com/build*",
-        "https://www.roblox.com/places/*",
-        "https://www.roblox.com/universes/*",
-        "https://www.roblox.com/game-pass/configure*",
-        "https://www.roblox.com/ide/*"
+      "js": [
+        "early-main.js"
       ],
-      "js": ["early-main.js"],
       "run_at": "document_start",
-      "world": "MAIN"
+      "world": "MAIN",
+      "exclude_matches": [
+        "https://www.roblox.com/games/start*",
+        "https://web.roblox.com/games/start*",
+        "https://www.roblox.com/game/join*",
+        "https://web.roblox.com/game/join*",
+        "https://www.roblox.com/game/placelauncher*",
+        "https://web.roblox.com/game/placelauncher*",
+        "https://www.roblox.com/login/negotiate*",
+        "https://web.roblox.com/login/negotiate*"
+      ]
     },
     {
       "matches": [
         "https://www.roblox.com/*",
-        "https://web.roblox.com/*"
-      ],
-      "exclude_matches": [
-        "https://create.roblox.com/*",
-        "https://www.roblox.com/create*",
-        "https://www.roblox.com/develop*",
-        "https://www.roblox.com/build*",
-        "https://www.roblox.com/places/*",
-        "https://www.roblox.com/universes/*",
-        "https://www.roblox.com/game-pass/configure*",
-        "https://www.roblox.com/ide/*"
+        "https://web.roblox.com/*",
+        "https://create.roblox.com/*"
       ],
       "js": [
         "bundles/content-ui.js"
       ],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "exclude_matches": [
+        "https://www.roblox.com/games/start*",
+        "https://web.roblox.com/games/start*",
+        "https://www.roblox.com/game/join*",
+        "https://web.roblox.com/game/join*",
+        "https://www.roblox.com/game/placelauncher*",
+        "https://web.roblox.com/game/placelauncher*",
+        "https://www.roblox.com/login/negotiate*",
+        "https://web.roblox.com/login/negotiate*"
+      ]
     }
   ],
   "web_accessible_resources": [
