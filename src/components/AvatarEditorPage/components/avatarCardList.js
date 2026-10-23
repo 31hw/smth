@@ -147,9 +147,9 @@ function AvatarCard({asset, equipped}) {
                     }
                 </div>
             </div>
-            <Link href={`/catalog/${asset.assetId}/${encodeURIComponent(asset.name)}`}>
+            <Link href={asset.isBundle ? `/bundles/${asset.assetId}/${encodeURIComponent(asset.name)}` : `/catalog/${asset.assetId}/${encodeURIComponent(asset.name)}`}>
                 <a className={s.avatarCardItemLink}
-                   href={`/catalog/${asset.assetId}/${encodeURIComponent(asset.name)}`}>
+                   href={asset.isBundle ? `/bundles/${asset.assetId}/${encodeURIComponent(asset.name)}` : `/catalog/${asset.assetId}/${encodeURIComponent(asset.name)}`}>
                     <span className='text-overflow'>{asset.name}</span>
                 </a>
             </Link>

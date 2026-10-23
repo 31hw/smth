@@ -106,11 +106,8 @@ const NavigationLinks = () => {
           <LinkEntry href="https://create.roblox.com/" external={true} light2019={light2019}>
             Create
           </LinkEntry>
-          <LinkEntry
-            href={era === '2016' ? '/BuildersClub/Upgrade.ashx' : '/search/groups'}
-            light2019={light2019}
-          >
-            {era === '2016' ? 'Builders Club' : 'Groups'}
+          <LinkEntry href="/upgrades/robux" light2019={light2019}>
+            Robux
           </LinkEntry>
         </div>
       </div>

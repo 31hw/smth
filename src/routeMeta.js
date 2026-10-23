@@ -28,22 +28,30 @@ const CREATE_PATH_PREFIXES = [
   '/my/createuserad.aspx',
 ];
 
-// Native Roblox endpoints/flows we should never hijack as UI pages (including native Upgrade / Plus / Robux pages)
+// Native Roblox endpoints/flows we should never hijack as UI pages (including native Upgrade / Plus / Payment / Agreement pages)
 const NATIVE_PASSTHROUGH_PREFIXES = [
   '/games/start',
   '/game/placelauncher',
   '/game/join',
   '/login/negotiate',
-  '/upgrade',
-  '/upgrades',
+  '/plus',
   '/premium',
+  '/upgrade',
+  '/upgrades/paymentmethods',
+  '/upgrades/redeem',
+  '/modcreditagreement',
 ];
 
 export function isNativePassthroughRoute(urlOrPath) {
   if (!urlOrPath || typeof urlOrPath !== 'string') return false;
+  if (urlOrPath.includes('rbx_native=1')) return true;
   try {
     if (/^https?:\/\//i.test(urlOrPath)) {
       const u = new URL(urlOrPath);
+      const host = u.hostname.toLowerCase();
+      if (host && host !== 'www.roblox.com' && host !== 'web.roblox.com' && host !== 'roblox.com') {
+        return true;
+      }
       const p = stripLocalePrefix(u.pathname).toLowerCase();
       return NATIVE_PASSTHROUGH_PREFIXES.some((prefix) => p === prefix || p.startsWith(prefix + '/'));
     }
@@ -142,15 +150,16 @@ const ROUTE_DEFS = [
   // Search
   { key: '/search/users', regex: /^\/search\/users$/i, params: [] },
 
-  // Badges, Collectibles, Promocodes, Builders Club, Report
+  // Badges, Collectibles, Promocodes, Robux, Upgrade, Report
   { key: '/Badges.aspx', regex: /^\/badges(?:\.aspx)?(?:\/(\d+)(?:\/([^/?#]*))?)?$/i, params: ['badgeId', 'name'] },
   { key: '/collectibles', regex: /^\/(?:collectibles|internal\/collectibles)$/i, params: [] },
   { key: '/promocodes', regex: /^\/(?:promocodes|redeem)$/i, params: [] },
+  { key: '/upgrades/robux', regex: /^\/upgrades\/robux$/i, params: [] },
   { key: '/BuildersClub/Upgrade.ashx', regex: /^\/(?:buildersclub\/upgrade\.ashx|internal\/membership)$/i, params: [] },
   { key: '/internal/report-center', regex: /^\/(?:internal\/report-center|abusereport(?:\/.*)?)$/i, params: [] },
 
   // Forums
-  { key: '/Forum/Default.aspx', regex: /^\/forum(?:\/default\.aspx)?$/i, params: [] },
+  { key: '/Forum/Default.aspx', regex: /^\/forum(?:\/(?:default|forumgroup)\.aspx)?$/i, params: [] },
   { key: '/Forum/ShowForum.aspx', regex: /^\/forum\/showforum\.aspx$/i, params: [] },
   { key: '/Forum/ShowPost.aspx', regex: /^\/forum\/showpost\.aspx$/i, params: [] },
   { key: '/Forum/AddPost.aspx', regex: /^\/forum\/addpost\.aspx$/i, params: [] },

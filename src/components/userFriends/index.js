@@ -20,7 +20,7 @@ import UserFriendsStore from "./stores/userFriendsStore";
 import Paging from "../pagination2016";
 import Link from "../link";
 import Dropdown2016 from "../dropdown2016";
-import PlayerHeadshot from "../playerHeadshot";
+import PlayerImage from "../playerImage";
 
 const useStyles = createUseStyles({
   title: {
@@ -28,7 +28,15 @@ const useStyles = createUseStyles({
   },
   imageWrapper: {
     border: '1px solid var(--text-color-quinary)',
+    background: 'var(--surface-subtle)',
+    borderRadius: 4,
+    overflow: 'hidden',
     minHeight: '82px',
+    '& img': {
+      width: '100%',
+      height: 'auto',
+      display: 'block',
+    },
   },
   userCard: {},
   username: {
@@ -77,6 +85,11 @@ const useStyles = createUseStyles({
   },
 })
 
+const displayNameFor = (user) => {
+  if (!user) return 'Unknown';
+  return user.name || user.displayName || user.username || 'Unknown';
+};
+
 const UserFriends = props => {
   const store = UserFriendsStore.useContainer();
   const auth = AuthenticationStore.useContainer();
@@ -84,7 +97,7 @@ const UserFriends = props => {
   const [name, setName] = useState(null);
   const [tab, setTab] = useState(null);
   useEffect(() => {
-    setTab(store.userId === auth.userId ? 'Friend Requests'  : 'Friends');
+    setTab('Friends');
   }, [store.userId, auth.userId]);
 
   const [friends, setFriends] = useState(null);
@@ -192,7 +205,7 @@ const UserFriends = props => {
     </div>;
   }
 
-  const arrayToUse = (tab === 'Friends' ? friends.slice((page * limit - limit), page * limit - 1) : followEntries && followEntries.data);
+  const arrayToUse = (tab === 'Friends' ? friends.slice((page * limit - limit), page * limit) : followEntries && followEntries.data);
   const pageCount = Math.ceil((tab === 'Friends' ? friends.length : followCount) / limit);
   const options = ['Friends', 'Followers', 'Following'];
   if (store.userId === auth.userId) {
@@ -273,22 +286,22 @@ const UserFriends = props => {
           return <div className={'col-12 col-md-6 col-lg-4 mb-4'} key={v.id}>
             <div className={s.friendCardWrapper}>
               <div className={'card ' + s.friendCard}>
-                    <div className='row p-2'>
-                      <div className='col-4'>
+                    <div className='row p-2 g-0'>
+                      <div className='col-5'>
                         <div className={s.imageWrapper}>
                           <Link href={`/users/${v.id}/profile`}>
                             <a>
-                              <PlayerHeadshot id={v.id} name={v.name} />
+                              <PlayerImage id={v.id} name={displayNameFor(v)} />
                             </a>
                           </Link>
                         </div>
                       </div>
-                      <div className='col-8'>
+                      <div className='col-7 ps-2'>
                         <div className='d-inline-block'>
                           <p className={'mb-0 font-size-18 ' + s.username}>
                             <Link href={`/users/${v.id}/profile`}>
                               <a className=''>
-                                {v.name} {isVerified ? <img src='/img/verified.svg' alt='Verified' style={{ width: 16, height: 16, verticalAlign: 'text-bottom', marginLeft: 4 }} /> : null}
+                                {displayNameFor(v)} {isVerified ? <img src='/img/verified.svg' alt='Verified' style={{ width: 16, height: 16, verticalAlign: 'text-bottom', marginLeft: 4 }} /> : null}
                               </a>
                             </Link>
                           </p>

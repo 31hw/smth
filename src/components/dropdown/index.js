@@ -19,21 +19,23 @@ const useDropdownStyles = createUseStyles({
     paddingTop: '4px',
     paddingBottom: '4px',
     cursor: 'pointer',
+    color: 'var(--text-color-primary)',
     '&:hover': {
-      background: 'var(--text-color-secondary)',
+      background: 'var(--surface-hover)',
     },
   },
   caret: {
     float: 'right',
-    color: '#666666',
+    color: 'var(--text-color-secondary)',
     paddingTop: '2px',
     fontSize: '12px',
   },
   leftMenu: {
     position: 'absolute',
-    background: '#d8d8d8',
+    background: 'var(--surface-panel)',
+    color: 'var(--text-color-primary)',
     border: '1px solid #565655',
-    minWidth: '150px',
+    minWidth: '160px',
     '@media(max-width: 800px)': {
       marginLeft: '20%!important',
       width: '80%',
@@ -44,14 +46,15 @@ const useDropdownStyles = createUseStyles({
     fontSize: '14px',
     fontWeight: 700,
     paddingTop: '8px',
-    paddingLeft: '4px',
+    paddingLeft: '6px',
+    color: 'var(--text-color-primary)',
   },
   separator: {
     borderBottom: '1px solid var(--text-color-quinary)',
     width: '100%',
   },
   selected: {
-    backgroundColor: 'var(--text-color-secondary)ccc!important'
+    backgroundColor: 'var(--surface-selected)!important'
   },
 });
 /**
@@ -82,10 +85,11 @@ const Dropdown = props => {
         <div className={s.separator}></div>
         {
           leftMenu.children.map(v => {
-            return <div key={v.name} className={s.itemDiv}>
-              <p className={`mb-0 mt-0 ${props.textClass}`} onClick={(e) => {
-                props.onClick(e, v.clickData);
-              }}>{v.name}</p>
+            return <div key={v.name} className={s.itemDiv} onClick={(e) => {
+              props.onClick(e, v.clickData);
+              setLeftMenu(null);
+            }}>
+              <p className={`mb-0 mt-0 ${props.textClass || ''}`}>{v.name}</p>
             </div>
           })
         }
@@ -96,14 +100,24 @@ const Dropdown = props => {
             if (v.name === 'separator') {
               return <div key={'separator' + i} className={s.separator}></div>
             }
-            return <div key={v.name} className={`${s.itemDiv} ${props.selected && props.selected === v.name ? s.selected : ''}`} onMouseEnter={() => {
-              if (v.children) {
-                setLeftMenu(v.children);
-              }
-            }}>
-              <p className={`mb-0 mt-0`} style={{lineHeight: '1.7em'}} onClick={(e) => {
-                props.onClick(e, v.clickData);
-              }}>{v.name} {v.children && <span className={s.caret}>►</span>}</p>
+            return <div
+              key={v.name}
+              className={`${s.itemDiv} ${props.selected && String(props.selected).toLowerCase() === String(v.id || v.name).toLowerCase() ? s.selected : ''}`}
+              onMouseEnter={() => {
+                if (v.children) {
+                  setLeftMenu(v.children);
+                } else {
+                  setLeftMenu(null);
+                }
+              }}
+              onClick={(e) => {
+                if (v.clickData) {
+                  props.onClick(e, v.clickData);
+                  setLeftMenu(null);
+                }
+              }}
+            >
+              <p className={`mb-0 mt-0`} style={{lineHeight: '1.7em'}}>{v.name} {v.children && <span className={s.caret}>►</span>}</p>
             </div>
           })
         }

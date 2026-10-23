@@ -32,6 +32,161 @@ function normalizeCatalogLimit(limit) {
   return valid.reduce((prev, curr) => (Math.abs(curr - n) < Math.abs(prev - n) ? curr : prev), 28);
 }
 
+const GENRE_ID_TO_NAME = {
+  1: 'TownAndCity',
+  2: 'Medieval',
+  3: 'SciFi',
+  4: 'Fighting',
+  5: 'Horror',
+  6: 'Naval',
+  7: 'Adventure',
+  8: 'Sports',
+  9: 'Comedy',
+  10: 'Western',
+  11: 'Military',
+  13: 'Building',
+  14: 'FPS',
+  15: 'RPG',
+};
+
+const GEAR_SUBTYPE_KEYWORDS = {
+  melee: 'sword',
+  ranged: 'blaster',
+  explosive: 'bomb',
+  powerup: 'potion',
+  navigation: 'coil',
+  musical: 'guitar',
+  social: 'bloxxy',
+  building: 'trowel',
+  transport: 'skateboard',
+};
+
+function resolveCatalogSearchMapping(rawCategory, rawSubCategory) {
+  const catStr = String(rawCategory || 'Featured').toLowerCase().trim();
+  const subStr = String(rawSubCategory || '').toLowerCase().trim();
+
+  // Featured -> Recent official items by Roblox (creatorTargetId=1, sortType=3)
+  if (catStr === '0' || catStr === 'featured') {
+    if (subStr === 'hats' || subStr === 'accessories' || subStr === 'headaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'HeadAccessories', isFeatured: true, autoUnavailableFallback: true };
+    }
+    if (subStr === 'gear' || subStr === 'gears') {
+      return { apiCat: 'Accessories', apiSub: 'Gear', isFeatured: true, autoUnavailableFallback: true };
+    }
+    if (subStr === 'face' || subStr === 'faces') {
+      return { apiCat: 'BodyParts', apiSub: 'Faces', isFeatured: true, autoUnavailableFallback: true };
+    }
+    if (subStr === 'packages' || subStr === 'bundles') {
+      return { apiCat: 'BodyParts', apiSub: 'Bundles', isFeatured: true, autoUnavailableFallback: true };
+    }
+    return { apiCat: 'All', apiSub: '', isFeatured: true, autoUnavailableFallback: true };
+  }
+
+  // Emotes / Avatar Animations
+  if (catStr === 'emotes' || catStr === 'avataranimations' || catStr === 'animations' || subStr === 'emotes' || subStr === 'emoteanimations') {
+    if (subStr === 'bundleanimations' || subStr === 'animations') {
+      return { apiCat: 'AvatarAnimations', apiSub: 'BundleAnimations', isFeatured: false };
+    }
+    if (subStr === 'allanimations') {
+      return { apiCat: 'AvatarAnimations', apiSub: '', isFeatured: false };
+    }
+    return { apiCat: 'AvatarAnimations', apiSub: 'EmoteAnimations', isFeatured: false };
+  }
+
+  // Collectibles
+  if (catStr === '2' || catStr === 'collectibles' || catStr === 'collectible') {
+    if (subStr === 'face' || subStr === 'faces') {
+      return { apiCat: 'Collectibles', apiSub: 'Faces', isFeatured: false };
+    }
+    if (subStr === 'hats' || subStr === 'accessories' || subStr === 'headaccessories') {
+      return { apiCat: 'Collectibles', apiSub: 'HeadAccessories', isFeatured: false };
+    }
+    if (subStr === 'gear' || subStr === 'gears') {
+      return { apiCat: 'Collectibles', apiSub: 'Gear', isFeatured: false };
+    }
+    return { apiCat: 'Collectibles', apiSub: '', isFeatured: false };
+  }
+
+  // Body Parts (All Body Parts, Heads, Dynamic Heads, Faces, Packages/Bundles)
+  if (catStr === '4' || catStr === 'bodyparts') {
+    if (subStr === 'head' || subStr === 'heads') {
+      return { apiCat: 'BodyParts', apiSub: 'Heads', isFeatured: false, autoUnavailableFallback: true, altSub: 'DynamicHeads' };
+    }
+    if (subStr === 'dynamicheads') {
+      return { apiCat: 'BodyParts', apiSub: 'DynamicHeads', isFeatured: false };
+    }
+    if (subStr === 'face' || subStr === 'faces') {
+      return { apiCat: 'BodyParts', apiSub: 'Faces', isFeatured: false, autoUnavailableFallback: true };
+    }
+    if (subStr === 'package' || subStr === 'packages' || subStr === 'bundle' || subStr === 'bundles') {
+      return { apiCat: 'BodyParts', apiSub: 'Bundles', isFeatured: false, altCat: 'Characters' };
+    }
+    return { apiCat: 'BodyParts', apiSub: '', isFeatured: false };
+  }
+
+  // Gear + all 9 classic Gear subtypes
+  if (catStr === '5' || catStr === 'gear' || catStr === 'gears') {
+    const impliedKeyword = GEAR_SUBTYPE_KEYWORDS[subStr] || '';
+    return {
+      apiCat: 'Accessories',
+      apiSub: 'Gear',
+      impliedKeyword,
+      isFeatured: false,
+      autoUnavailableFallback: true,
+    };
+  }
+
+  // Clothing & Accessories
+  if (catStr === '3' || catStr === 'clothing' || catStr === 'null') {
+    if (subStr === 'hats' || subStr === 'hat' || subStr === 'headaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'HeadAccessories', isFeatured: false };
+    }
+    if (subStr === 'hair' || subStr === 'hairaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'HairAccessories', isFeatured: false };
+    }
+    if (subStr === 'accessories' || subStr === 'allaccessories') {
+      return { apiCat: 'Accessories', apiSub: '', isFeatured: false };
+    }
+    if (subStr === 'faceaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'FaceAccessories', isFeatured: false };
+    }
+    if (subStr === 'neck' || subStr === 'neckaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'NeckAccessories', isFeatured: false };
+    }
+    if (subStr === 'shoulder' || subStr === 'shoulders' || subStr === 'shoulderaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'ShoulderAccessories', isFeatured: false };
+    }
+    if (subStr === 'front' || subStr === 'frontaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'FrontAccessories', isFeatured: false };
+    }
+    if (subStr === 'back' || subStr === 'backaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'BackAccessories', isFeatured: false };
+    }
+    if (subStr === 'waist' || subStr === 'waistaccessories') {
+      return { apiCat: 'Accessories', apiSub: 'WaistAccessories', isFeatured: false };
+    }
+    if (subStr === 'shirt' || subStr === 'shirts' || subStr === 'classicshirts') {
+      return { apiCat: 'Clothing', apiSub: 'ClassicShirts', isFeatured: false };
+    }
+    if (subStr === 'tshirt' || subStr === 'tshirts' || subStr === 't-shirts' || subStr === 'teeshirt' || subStr === 'teeshirts' || subStr === 'classictshirts') {
+      return { apiCat: 'Clothing', apiSub: 'ClassicTShirts', isFeatured: false };
+    }
+    if (subStr === 'pant' || subStr === 'pants' || subStr === 'classicpants') {
+      return { apiCat: 'Clothing', apiSub: 'ClassicPants', isFeatured: false };
+    }
+    if (subStr === 'package' || subStr === 'packages' || subStr === 'bundle' || subStr === 'bundles') {
+      return { apiCat: 'BodyParts', apiSub: 'Bundles', isFeatured: false, altCat: 'Characters' };
+    }
+    return { apiCat: 'Clothing', apiSub: '', isFeatured: false };
+  }
+
+  if (catStr === '11' || catStr === 'accessories') {
+    return { apiCat: 'Accessories', apiSub: subStr && subStr !== 'all' ? rawSubCategory : '', isFeatured: false };
+  }
+
+  return { apiCat: 'All', apiSub: '', isFeatured: false };
+}
+
 export const searchCatalog = async ({
   category,
   subCategory = null,
@@ -39,62 +194,173 @@ export const searchCatalog = async ({
   limit = 28,
   cursor = null,
   sort = 0,
+  genres = null,
+  minPrice = null,
+  maxPrice = null,
+  freeOnly = false,
   creatorType = null,
   creatorId = null,
   creatorName = null,
   includeNotForSale = null,
 }) => {
   const safeLimit = normalizeCatalogLimit(limit);
-  let catParam = category || 'Featured';
-  let subCatParam = subCategory || '';
+  const mapped = resolveCatalogSearchMapping(category, subCategory);
 
-  const catStr = String(catParam).toLowerCase().trim();
-  if (catStr === '0' || catStr === 'featured') {
-    catParam = 'Featured';
-  } else if (catStr === '1' || catStr === 'all') {
-    catParam = 'All';
-  } else if (catStr === '2' || catStr === 'collectibles' || catStr === 'collectible') {
-    catParam = 'Collectibles';
-  } else if (catStr === '3' || catStr === 'clothing') {
-    catParam = 'Clothing';
-  } else if (catStr === '4' || catStr === 'bodyparts') {
-    catParam = 'BodyParts';
-  } else if (catStr === '5' || catStr === 'gear' || catStr === 'gears') {
-    catParam = 'Accessories';
-    if (!subCatParam) subCatParam = 'Gear';
-  } else if (catStr === '11' || catStr === 'accessories') {
-    catParam = 'Accessories';
+  let effectiveCreatorType = creatorType;
+  let effectiveCreatorId = creatorId;
+  let effectiveCreatorName = creatorName;
+  let effectiveSort = Number(sort) || 0;
+
+  // Featured = Recent items by Roblox (unless user explicitly filtered by another creator)
+  if (mapped.isFeatured && !effectiveCreatorId && !effectiveCreatorName) {
+    effectiveCreatorType = 'User';
+    effectiveCreatorId = 1;
+    if (effectiveSort === 0) {
+      effectiveSort = 3; // Recently Updated
+    }
   }
 
-  let url = `/v1/search/items?category=${encodeURIComponent(catParam)}&limit=${safeLimit}`;
-  if (sort && Number(sort) > 0) {
-    url += `&sortType=${encodeURIComponent(sort)}`;
-  }
-  if (cursor) {
-    url += `&cursor=${encodeURIComponent(cursor)}`;
-  }
-  if (query) {
-    url += `&keyword=${encodeURIComponent(query)}`;
-  }
-  if (
-    subCatParam &&
-    String(subCatParam) !== '0' &&
-    String(subCatParam).toLowerCase() !== 'all' &&
-    String(subCatParam).toLowerCase() !== 'items'
-  ) {
-    url += `&subcategory=${encodeURIComponent(subCatParam)}`;
-  }
-  if (creatorType && creatorId) {
-    url += `&creatorTargetId=${encodeURIComponent(creatorId)}&creatorType=${encodeURIComponent(creatorType)}`;
-  } else if (creatorName) {
-    url += `&creatorName=${encodeURIComponent(creatorName)}`;
-  }
-  if (includeNotForSale === true) {
-    url += `&includeNotForSale=true`;
+  const effectiveKeyword = query && String(query).trim()
+    ? String(query).trim()
+    : mapped.impliedKeyword || '';
+
+  const genreNames = Array.isArray(genres)
+    ? genres.map((g) => GENRE_ID_TO_NAME[Number(g)] || (typeof g === 'string' ? g : null)).filter(Boolean)
+    : [];
+
+  const buildQueryString = ({ catOverride, subOverride, forceUnavailable = false, dropKeyword = false } = {}) => {
+    const useCat = catOverride || mapped.apiCat;
+    const useSub = typeof subOverride === 'string' ? subOverride : mapped.apiSub;
+    let qs = `category=${encodeURIComponent(useCat)}&limit=${safeLimit}`;
+    if (useSub) {
+      qs += `&subcategory=${encodeURIComponent(useSub)}`;
+    }
+    if (effectiveSort > 0 && effectiveSort <= 5) {
+      qs += `&sortType=${encodeURIComponent(effectiveSort)}`;
+    }
+    if (cursor) {
+      qs += `&cursor=${encodeURIComponent(cursor)}`;
+    }
+    const kw = dropKeyword ? '' : effectiveKeyword;
+    if (kw) {
+      qs += `&keyword=${encodeURIComponent(kw)}`;
+    }
+    if (effectiveCreatorType && effectiveCreatorId) {
+      qs += `&creatorTargetId=${encodeURIComponent(effectiveCreatorId)}&creatorType=${encodeURIComponent(effectiveCreatorType)}`;
+    } else if (effectiveCreatorName) {
+      qs += `&creatorName=${encodeURIComponent(effectiveCreatorName)}`;
+    }
+    if (freeOnly) {
+      qs += `&minPrice=0&maxPrice=0`;
+    } else {
+      if (minPrice !== null && minPrice !== '' && Number.isFinite(Number(minPrice)) && Number(minPrice) >= 0) {
+        qs += `&minPrice=${encodeURIComponent(Math.floor(Number(minPrice)))}`;
+      }
+      if (maxPrice !== null && maxPrice !== '' && Number.isFinite(Number(maxPrice)) && Number(maxPrice) >= 0) {
+        qs += `&maxPrice=${encodeURIComponent(Math.floor(Number(maxPrice)))}`;
+      }
+    }
+    for (const gName of genreNames) {
+      qs += `&genres=${encodeURIComponent(gName)}`;
+    }
+    if (includeNotForSale === true || forceUnavailable) {
+      qs += `&includeNotForSale=true`;
+    }
+    return qs;
+  };
+
+  const runSingleSearch = async (qs) => {
+    // Prefer /v2/search/items/details (single GET with full item details, avoids POST /v1/catalog/items/details 429s)
+    try {
+      const v2Res = await request('GET', getFullUrl('catalog', `/v2/search/items/details?${qs}`));
+      if (Array.isArray(v2Res?.data?.data)) {
+        const hasFullDetails = v2Res.data.data.some((it) => typeof it.name === 'string' && it.name.length > 0);
+        if (hasFullDetails) {
+          const normalized = v2Res.data.data.map((raw) =>
+            normalizeMergedCatalogItem({
+              id: raw.id,
+              requestedType: raw.itemType === 'Bundle' ? 'Bundle' : 'Asset',
+              catItem: {
+                ...raw,
+                itemStatuses: raw.itemStatuses || raw.itemStatus || [],
+              },
+            })
+          );
+          return {
+            ...v2Res.data,
+            data: normalized,
+            _normalized: true,
+          };
+        }
+        return v2Res.data;
+      }
+    } catch (_) {
+      // Fallback to /v1/search/items below
+    }
+
+    const v1Res = await request('GET', getFullUrl('catalog', `/v1/search/items?${qs}`));
+    return v1Res.data;
+  };
+
+  let data;
+  try {
+    data = await runSingleSearch(buildQueryString());
+  } catch (err) {
+    try {
+      if (mapped.altCat || mapped.altSub) {
+        data = await runSingleSearch(
+          buildQueryString({ catOverride: mapped.altCat, subOverride: mapped.altSub })
+        );
+      } else {
+        throw err;
+      }
+    } catch (_) {
+      // Final safety net: plain "All" search without creator/sort/genre filters so the
+      // catalog is never empty just because one filter combination is rejected upstream.
+      const fallbackQs = `category=All&limit=${safeLimit}${
+        cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''
+      }${effectiveKeyword ? `&keyword=${encodeURIComponent(effectiveKeyword)}` : ''}`;
+      data = await runSingleSearch(fallbackQs);
+    }
   }
 
-  const res = await request('GET', getFullUrl('catalog', url));
-  return res.data;
+  // Smart fallbacks for classic Roblox categories where modern Roblox moved items off primary sale
+  if ((!Array.isArray(data?.data) || data.data.length === 0) && mapped.autoUnavailableFallback && includeNotForSale !== true) {
+    try {
+      const retryData = await runSingleSearch(buildQueryString({ forceUnavailable: true }));
+      if (Array.isArray(retryData?.data) && retryData.data.length > 0) {
+        data = retryData;
+      }
+    } catch (_) {
+      // ignore fallback error
+    }
+  }
+
+  if ((!Array.isArray(data?.data) || data.data.length === 0) && (mapped.altCat || mapped.altSub)) {
+    try {
+      const altData = await runSingleSearch(
+        buildQueryString({ catOverride: mapped.altCat, subOverride: mapped.altSub, forceUnavailable: true })
+      );
+      if (Array.isArray(altData?.data) && altData.data.length > 0) {
+        data = altData;
+      }
+    } catch (_) {
+      // ignore alt error
+    }
+  }
+
+  if ((!Array.isArray(data?.data) || data.data.length === 0) && mapped.impliedKeyword && !query) {
+    try {
+      const broadGear = await runSingleSearch(buildQueryString({ dropKeyword: true, forceUnavailable: true }));
+      if (Array.isArray(broadGear?.data) && broadGear.data.length > 0) {
+        data = broadGear;
+      }
+    } catch (_) {
+      // ignore broad gear fallback error
+    }
+  }
+
+  return data;
 };
 
 const _economyDetailsCache = new Map();

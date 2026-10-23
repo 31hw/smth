@@ -168,7 +168,7 @@ export const getFavorites = async ({ userId, assetTypeId, limit = 25, cursor = '
   }
 };
 
-export const getInventory = async ({ userId, assetTypeId, limit = 25, cursor = '' }) => {
+export const getInventory = async ({ userId, assetTypeId, limit = 25, cursor = '', enrich = true }) => {
   if (!userId) {
     return {
       Data: {
@@ -197,7 +197,7 @@ export const getInventory = async ({ userId, assetTypeId, limit = 25, cursor = '
     // Enrich creator & restriction badges where possible via catalog batch details
     const assetIds = [...new Set(rawItems.map((x) => x.assetId).filter(Boolean))];
     const detailsMap = {};
-    if (assetIds.length > 0) {
+    if (enrich && assetIds.length > 0) {
       try {
         const details = await getItemDetailsNew(assetIds);
         for (const d of details) {
@@ -247,6 +247,38 @@ export const getInventory = async ({ userId, assetTypeId, limit = 25, cursor = '
     };
   } catch (err) {
     console.warn('[inventory] getInventory fallback:', err?.message);
+    try {
+      const avInv = await request(
+        'GET',
+        getFullUrl('avatar', '/v1/avatar-inventory?sortOption=1&pageLimit=100')
+      );
+      const rawFallback = (avInv?.data?.avatarInventoryItems || []).filter((it) => {
+        const iType = it.itemCategory?.itemType;
+        const isAsset = iType === 1 || iType === 'Asset' || !iType;
+        return isAsset && Number(it.itemCategory?.itemSubType) === Number(assetTypeId);
+      });
+      if (rawFallback.length > 0) {
+        return {
+          Data: {
+            Page: 1,
+            ItemsPerPage: safeLimit,
+            TotalItems: rawFallback.length,
+            nextPageCursor: null,
+            previousPageCursor: null,
+            Items: rawFallback.map((it) => ({
+              Item: {
+                AssetId: Number(it.itemId),
+                Name: it.itemName || 'Item',
+                AssetType: Number(assetTypeId),
+              },
+              Creator: { Id: 1, Name: 'ROBLOX', Type: 'User' },
+              Product: { SerialNumber: null },
+              AssetRestrictionIcon: { CssTag: null },
+            })),
+          },
+        };
+      }
+    } catch (_) {}
     return {
       Data: {
         Page: 1,

@@ -4,6 +4,20 @@ export const getMyInfo = () => {
   return request('GET', getFullUrl('users', '/v1/users/authenticated')).then((d) => d.data);
 };
 
+export const getUsersByIds = async (userIds) => {
+  const clean = [...new Set((userIds || []).map(Number).filter((n) => n > 0))];
+  if (!clean.length) return [];
+  try {
+    const res = await request('POST', getFullUrl('users', '/v1/users'), {
+      userIds: clean,
+      excludeBannedUsers: false,
+    });
+    return Array.isArray(res?.data?.data) ? res.data.data : [];
+  } catch (_) {
+    return [];
+  }
+};
+
 export const getUserInfo = ({ userId }) => {
   return request('GET', getFullUrl('users', `/v1/users/${userId}`)).then((d) => d.data);
 };

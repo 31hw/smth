@@ -37,9 +37,14 @@ const useInputStyles = createUseStyles({
 const OldSelect = props => {
   const s = useInputStyles();
   return <>
-    <select disabled={props.disabled} className={s.select} onChange={(v) => {
-      props.onChange(v.currentTarget.value);
-    }}>
+    <select
+      disabled={props.disabled}
+      className={s.select}
+      value={typeof props.value !== 'undefined' && props.value !== null ? String(props.value) : undefined}
+      onChange={(v) => {
+        props.onChange(v.currentTarget.value);
+      }}
+    >
       {
         props.options.map((v, i) => {
           return <option key={i} value={v.key}>{v.value}</option>

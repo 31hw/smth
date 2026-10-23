@@ -4,7 +4,7 @@ import { getGameUrl } from "../../../services/games";
 import Activity from "../../userActivity";
 import DashboardStore from "../stores/dashboardStore";
 import Link from "../../link";
-import PlayerHeadshot from "../../playerHeadshot";
+import PlayerImage from "../../playerImage";
 
 const useStyles = createUseStyles({
     friendEntry: {
@@ -82,7 +82,7 @@ const FriendEntry = props => {
                 <Link href={`/users/${props.id}/profile`}>
                     <a>
                         <div className={s.thumbnailWrapper}>
-                            <PlayerHeadshot className={s.img} id={props.id} name={props.name} />
+                            <PlayerImage className={s.img} id={props.id} name={props.name} />
                             {onlineStatus && <div className={s.activityWrapper}><Activity {...onlineStatus} /></div>}
                         </div>
                         <p className={s.username}>

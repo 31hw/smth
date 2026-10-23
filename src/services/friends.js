@@ -1,4 +1,5 @@
 import request, { getFullUrl } from '../lib/request';
+import { getUsersByIds } from './users';
 
 function normalizeFriendLimit(limit) {
   const valid = [10, 18, 25, 50, 100];
@@ -10,7 +11,26 @@ function normalizeFriendLimit(limit) {
 export const getFriends = ({ userId }) => {
   if (!userId) return Promise.resolve([]);
   return request('GET', getFullUrl('friends', `/v1/users/${userId}/friends`))
-    .then((d) => d.data?.data || [])
+    .then(async (d) => {
+      const list = Array.isArray(d.data?.data) ? d.data.data : [];
+      // Live Roblox occasionally omits name/displayName; backfill them in one batch.
+      const missing = list.filter((v) => !v.name && !v.displayName).map((v) => v.id);
+      if (missing.length === 0) {
+        return list.map((v) => ({ ...v, name: v.name || v.displayName, displayName: v.displayName || v.name }));
+      }
+      const info = await getUsersByIds(missing);
+      const byId = new Map(info.map((u) => [Number(u.id), u]));
+      return list.map((v) => {
+        const extra = byId.get(Number(v.id));
+        const name = v.name || v.displayName || extra?.name || extra?.displayName || 'Unknown';
+        return {
+          ...v,
+          name,
+          displayName: v.displayName || extra?.displayName || name,
+          hasVerifiedBadge: Boolean(v.hasVerifiedBadge || extra?.hasVerifiedBadge),
+        };
+      });
+    })
     .catch(() => []);
 };
 

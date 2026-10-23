@@ -19,12 +19,14 @@ const DashboardStore = createContainer(() => {
         obj[user.userId] = user;
       }
       setFriendStatus(obj);
-      let sortedFriends = friends.sort((a,b) => {
-        const onlineA = dayjs(obj[a.id].lastOnline);
-        const onlineB = dayjs(obj[b.id].lastOnline);
-        return onlineA.isAfter(onlineB) ? -1 : onlineA.isSame(onlineB) ? 0 : 1;
+      const sortedFriends = [...friends].sort((a, b) => {
+        const presenceA = obj[a.id];
+        const presenceB = obj[b.id];
+        const timeA = presenceA?.lastOnline ? dayjs(presenceA.lastOnline) : dayjs(0);
+        const timeB = presenceB?.lastOnline ? dayjs(presenceB.lastOnline) : dayjs(0);
+        return timeA.isAfter(timeB) ? -1 : timeA.isSame(timeB) ? 0 : 1;
       });
-      setFriends([...sortedFriends]);
+      setFriends(sortedFriends);
     }).catch(e => {
       console.error('[error] friends err', e);
     })

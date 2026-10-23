@@ -111,9 +111,11 @@ for (const excludedUrl of [
   'https://www.roblox.com/en-us/create',
   'https://www.roblox.com/places/192800/update',
   'https://www.roblox.com/game-pass/configure?id=1234',
+  'https://www.roblox.com/plus',
   'https://www.roblox.com/premium/membership',
-  'https://www.roblox.com/upgrades/robux',
   'https://www.roblox.com/upgrade',
+  'https://www.roblox.com/upgrades/paymentmethods',
+  'https://www.roblox.com/modcreditagreement/957e398b-e2a0-49aa-aefe-c5a6ad22f3a2',
   'https://www.roblox.com/home?rbx_native=1',
 ]) {
   const dom = new JSDOM(
@@ -129,7 +131,7 @@ for (const excludedUrl of [
   console.log(`  [OK] Untouched as required: ${excludedUrl}`);
 }
 
-console.log('\n=== 3. Verifying DOM Replacement, Settings-Only Theme Sync & All 45 Routes ===');
+console.log('\n=== 3. Verifying DOM Replacement, Settings-Only Theme Sync & All Classic Routes ===');
 
 function mockRobloxApiResponse(rawUrl, method, data) {
   const u = new URL(rawUrl);
@@ -141,6 +143,145 @@ function mockRobloxApiResponse(rawUrl, method, data) {
   if (host === 'users.roblox.com' && /^\/v1\/users\/\d+$/.test(p)) {
     const id = Number(p.split('/').pop());
     return { id, name: 'Shedletsky', displayName: 'Shedletsky', description: 'Hello', created: '2006-06-22T00:00:00Z', isBanned: false, hasVerifiedBadge: true };
+  }
+  if (host === 'catalog.roblox.com' && p === '/v2/search/items/details') {
+    const category = (u.searchParams.get('category') || 'All').toLowerCase();
+    const subcategory = (u.searchParams.get('subcategory') || '').toLowerCase();
+    const isEmote = category === 'avataranimations';
+    const isFeatured = category === 'all' && u.searchParams.get('creatorTargetId') === '1';
+    const items = isEmote
+      ? [
+          {
+            id: 33668595,
+            itemType: 'Asset',
+            assetType: 61,
+            name: 'Floss Dance',
+            description: 'Emote',
+            creatorType: 'User',
+            creatorTargetId: 1,
+            creatorName: 'ROBLOX',
+            price: 200,
+            priceStatus: 'For Sale',
+            unitsAvailableForConsumption: 0,
+            favoriteCount: 6000,
+            itemRestrictions: [],
+          },
+        ]
+      : [
+          {
+            id: isFeatured ? 10472779 : 1365767,
+            itemType: 'Asset',
+            assetType: isFeatured ? 19 : 8,
+            name: isFeatured || subcategory === 'gear' ? 'Bloxy Cola' : 'Valkyrie Helm',
+            description: 'Classic item',
+            creatorType: 'User',
+            creatorTargetId: 1,
+            creatorName: 'ROBLOX',
+            price: 500,
+            priceStatus: 'For Sale',
+            unitsAvailableForConsumption: 0,
+            favoriteCount: 15420,
+            itemRestrictions: [],
+          },
+        ];
+    return {
+      data: items,
+      nextPageCursor: null,
+      previousPageCursor: null,
+      keyword: u.searchParams.get('keyword') || null,
+    };
+  }
+  if (host === 'catalog.roblox.com' && p === '/v1/search/items') {
+    return {
+      data: [{ id: 1365767, itemType: 'Asset' }],
+      nextPageCursor: null,
+      previousPageCursor: null,
+    };
+  }
+  if (host === 'friends.roblox.com' && /^\/v1\/users\/\d+\/friends$/.test(p)) {
+    return {
+      data: [
+        { id: 156, name: 'builderman', displayName: 'builderman', hasVerifiedBadge: true },
+        { id: 261, name: 'Shedletsky', displayName: 'Shedletsky', hasVerifiedBadge: true },
+      ],
+    };
+  }
+  if (host === 'users.roblox.com' && p === '/v1/users' && method === 'POST') {
+    return { data: [{ id: 1, name: 'Roblox', displayName: 'Roblox' }] };
+  }
+  if (host === 'thumbnails.roblox.com' && p.startsWith('/v1/users/')) {
+    const ids = (u.searchParams.get('userIds') || '261').split(',');
+    return {
+      data: ids.map((id) => ({
+        targetId: Number(id),
+        state: 'Completed',
+        imageUrl: 'https://tr.rbxcdn.com/user-avatar-placeholder.png',
+      })),
+    };
+  }
+  if (host === 'avatar.roblox.com' && p === '/v1/avatar-inventory') {
+    return {
+      avatarInventoryItems: [
+        { itemId: 1365767, itemName: 'Valkyrie Helm', itemCategory: { itemType: 1, itemSubType: 8 } },
+        { itemId: 10472779, itemName: 'Bloxy Cola', itemCategory: { itemType: 1, itemSubType: 19 } },
+        { itemId: 33668595, itemName: 'Floss Dance', itemCategory: { itemType: 1, itemSubType: 61 } },
+      ],
+    };
+  }
+  if (host === 'avatar.roblox.com' && /^\/v1\/recent-items\/[a-z]+\/list$/i.test(p)) {
+    return {
+      data: [{ id: 1365767, name: 'Valkyrie Helm', type: 'Asset', assetType: { id: 8, name: 'Hat' } }],
+      total: 1,
+    };
+  }
+  if (host === 'inventory.roblox.com' && /^\/v2\/users\/\d+\/inventory\/\d+$/.test(p)) {
+    return {
+      data: [
+        { assetId: 1365767, assetName: 'Valkyrie Helm', serialNumber: null },
+      ],
+      nextPageCursor: null,
+      previousPageCursor: null,
+    };
+  }
+  if (host === 'catalog.roblox.com' && /^\/v1\/users\/\d+\/bundles$/.test(p)) {
+    return { data: [], nextPageCursor: null, previousPageCursor: null };
+  }
+  if (host === 'privatemessages.roblox.com' && p === '/v1/announcements') {
+    return {
+      collection: [
+        {
+          id: 1,
+          subject: 'Important account notice',
+          body:
+            'Hello! &lt;br&gt;&lt;br&gt; Your account is eligible for Robux credit for the items you purchased that can no longer be worn by your avatar.&lt;br&gt; To receive the credit please review and accept the terms of the: &lt;a href=&quot;https://www.roblox.com/modcreditagreement/957e398b-e2a0-49aa-aefe-c5a6ad22f3a2&quot;&gt;&lt;u&gt;Agreement&lt;/u&gt;&lt;/a&gt;.&lt;br&gt;&lt;br&gt; We apologize for any inconvenience.&lt;br&gt; &lt;br&gt; Sincerely, The Roblox Team',
+          sender: { id: 1, name: 'Roblox', displayName: 'Roblox' },
+          created: '2026-10-20T10:00:00Z',
+          updated: '2026-10-20T10:00:00Z',
+          isRead: false,
+          isSystemMessage: true,
+        },
+      ],
+      totalCollectionSize: 1,
+    };
+  }
+  if (host === 'privatemessages.roblox.com' && p === '/v1/messages') {
+    return {
+      collection: [
+        {
+          id: 987654,
+          subject: 'Welcome to ROBLOX',
+          body: 'Thanks for joining!',
+          sender: { id: 156, name: 'builderman', displayName: 'builder man' },
+          recipient: { id: 261, name: 'Shedletsky', displayName: 'Shedletsky' },
+          created: '2026-10-21T09:00:00Z',
+          updated: '2026-10-21T09:00:00Z',
+          isRead: false,
+        },
+      ],
+      totalCollectionSize: 1,
+      totalPages: 1,
+      pageNumber: 0,
+    };
   }
   if (host === 'economy.roblox.com' && p.endsWith('/currency')) return { robux: 1200 };
   if (host === 'economy.roblox.com' && /^\/v2\/assets\/\d+\/details$/.test(p)) {
@@ -394,6 +535,8 @@ const testRoutes = [
   '/My/Item.aspx?id=10472779',
   '/My/CurrencyExchange.aspx',
   '/collectibles',
+  '/upgrades/robux',
+  '/plus?rbx_native=1',
   '/BuildersClub/Upgrade.ashx',
   '/Badges.aspx',
   '/Forum/Default.aspx',
@@ -446,6 +589,94 @@ for (const era of ['2019', '2016']) {
       assert.ok(
         nextNode.textContent.includes('48,291'),
         `Expected live economy v2 Sales count (48,291) on [${era}] ${route}; got: ${nextNode.textContent.slice(0, 300)}`
+      );
+    }
+    if (route === '/catalog') {
+      await new Promise((r) => setTimeout(r, 80));
+      assert.ok(
+        nextNode.textContent.includes('Featured Items on ROBLOX'),
+        `Expected Featured heading on [${era}] /catalog`
+      );
+      assert.ok(
+        nextNode.textContent.includes('Recent items by ROBLOX'),
+        `Expected Featured = Recent items by Roblox on [${era}] /catalog`
+      );
+      assert.ok(
+        nextNode.textContent.includes('Emotes') &&
+          nextNode.textContent.includes('Body Parts') &&
+          nextNode.textContent.includes('Clothing') &&
+          nextNode.textContent.includes('Gear'),
+        `Expected working catalog category navigation (Emotes / Body Parts / Clothing / Gear) on [${era}] /catalog`
+      );
+      assert.ok(
+        win.document.getElementById('catalog_genre_fitler_13'),
+        `Expected Genre filter checkboxes on [${era}] /catalog`
+      );
+
+      if (era === '2019') {
+        // Click the "Emotes" category entry and verify the catalog actually re-queries
+        const emotesEntry = [...win.document.querySelectorAll('p')].find(
+          (el) => el.textContent.trim() === 'Emotes'
+        );
+        assert.ok(emotesEntry, 'Expected an Emotes entry in the catalog category navigation');
+        emotesEntry.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+        await new Promise((r) => setTimeout(r, 120));
+        assert.ok(
+          win.document.getElementById('__next').textContent.includes('Floss Dance'),
+          'Expected live Emotes results after clicking the Emotes catalog category'
+        );
+        // Reset back to Featured for the remaining routes
+        const featuredEntry = [...win.document.querySelectorAll('p')].find(
+          (el) => el.textContent.trim() === 'Featured'
+        );
+        if (featuredEntry) {
+          featuredEntry.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+          await new Promise((r) => setTimeout(r, 80));
+        }
+      }
+    }
+    if (route === '/My/Messages') {
+      await new Promise((r) => setTimeout(r, 80));
+      assert.ok(
+        nextNode.textContent.includes('Welcome to ROBLOX') ||
+          nextNode.textContent.includes('Important account notice'),
+        `Expected inbox messages to render on [${era}] /My/Messages; got: ${nextNode.textContent.slice(0, 300)}`
+      );
+    }
+    if (route === '/users/261/friends') {
+      await new Promise((r) => setTimeout(r, 80));
+      assert.ok(
+        nextNode.textContent.includes('builderman'),
+        `Expected friend names to render on [${era}] /users/261/friends`
+      );
+    }
+    if (route === '/upgrades/robux') {
+      assert.ok(
+        nextNode.textContent.includes('Buy Robux'),
+        `Expected custom Buy Robux layout on [${era}] /upgrades/robux`
+      );
+    }
+    if (route === '/My/Avatar' && era === '2019') {
+      await new Promise((r) => setTimeout(r, 120));
+      assert.ok(
+        !nextNode.textContent.includes('You do not have any items here.'),
+        'Expected the avatar editor Recent list to load owned items (not an empty list)'
+      );
+      const clothingTab = [...win.document.querySelectorAll('div')].find(
+        (el) => el.className && /vTab/.test(el.className) && el.textContent.trim() === 'Clothing'
+      );
+      assert.ok(clothingTab, 'Expected a Clothing tab in the avatar editor');
+      clothingTab.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 60));
+      const hatEntry = [...win.document.querySelectorAll('div')].find(
+        (el) => el.textContent.trim() === 'Hat' && el.className && /submenuButton/.test(el.className)
+      );
+      assert.ok(hatEntry, 'Expected a Hat sub-item inside the Clothing avatar editor submenu');
+      hatEntry.dispatchEvent(new win.MouseEvent('click', { bubbles: true }));
+      await new Promise((r) => setTimeout(r, 150));
+      assert.ok(
+        win.document.getElementById('__next').textContent.includes('Valkyrie Helm'),
+        'Expected avatar editor Hats list to show owned inventory items'
       );
     }
   }

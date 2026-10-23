@@ -154,7 +154,7 @@ const Wardrobe = props => {
   }
 
   useEffect(() => {
-    if (locked) return;
+    if (!characterStore.userId || locked) return;
     setLocked(true);
     getInventory({
       userId: characterStore.userId,
@@ -174,7 +174,7 @@ const Wardrobe = props => {
     }).finally(() => {
       setLocked(false);
     })
-  }, [cursor, category]);
+  }, [cursor, category, characterStore.userId]);
 
   return <div className='row'>
     <div className='col-12'>

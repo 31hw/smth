@@ -110,69 +110,60 @@ const useStyles = createUseStyles({
     
     submenuContainer: {
         padding: 12,
-        borderTop: "1px solid #b8b8b8",
+        borderTop: "1px solid var(--border-subtle)",
         opacity: 1,
         transition: "opacity 100ms",
         width: "100%",
         position: "absolute",
-        zIndex: 1,
+        zIndex: 5,
         margin: "0 0 18px",
+        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.18)",
     },
 });
 
-/**
- * Vertical tabs, custom for avatar
- * @param {{
- * options: {id: string; name: string; element: JSX.Element; onClick?: any; tabType?: number; count?: number}[];
- * onChange?: (arg: {name: string; element: JSX.Element; count?: number;}) => void;
- * default?: string;
- * elementClass?: string;
- * tabType: number;
- * setTabType: (number) => void;
- * }} props
- */
 const avatarTabs = props => {
     const s = useStyles();
     const {options} = props;
     
-    // active submenu is the CLICKED submenu, open submenu is the HOVERED submenu
-    // active always takes priority over open
     const {activeSubmenu, setActiveSubmenu, openSubmenu, setOpenSubmenu, selectedList} = AvatarPageStore.useContainer();
     const [hoveringTabs, setHoveringTabs] = useState(false);
-    const [hoveringSubmenuTabs, setHoveringSubmenuTabs] = useState(false);
     
+    const rootRef = useRef(null);
     const selmElmRef = useRef(null);
     const tabElmRef = useRef(null);
-    const timeoutRef = useRef(null);
     
     useEffect(() => {
-        const handleClick = () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            timeoutRef.current = setTimeout(() => {
-                if (!activeSubmenu?.clickImmune) {
-                    setActiveSubmenu(null);
-                }
-                setHoveringTabs(false);
-            }, 25);
+        const handleClick = (event) => {
+            if (rootRef.current && rootRef.current.contains(event.target)) {
+                return;
+            }
+            if (!activeSubmenu?.clickImmune) {
+                setActiveSubmenu(null);
+            }
+            setOpenSubmenu(null);
+            setHoveringTabs(false);
         };
-        const handleMouseMove = (event) => {
-            const elements = document.elementsFromPoint(event.clientX, event.clientY);
-            setHoveringTabs(elements.includes(selmElmRef.current) || elements.includes(tabElmRef.current));
-        }
         document.addEventListener('click', handleClick);
-        document.addEventListener('mousemove', handleMouseMove);
         return () => {
             document.removeEventListener('click', handleClick);
-            document.removeEventListener('mousemove', handleMouseMove);
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
         }
-    }, [activeSubmenu, openSubmenu]);
+    }, [activeSubmenu]);
     
     function getListTab() {
         return options.find(v => v.id === selectedList.tab);
     }
+
+    const shownSubmenu = activeSubmenu?.element || (hoveringTabs && openSubmenu?.element) || null;
     
-    return <div style={{position: 'relative', userSelect: 'none'}}>
+    return <div
+        ref={rootRef}
+        style={{position: 'relative', userSelect: 'none'}}
+        onMouseEnter={() => setHoveringTabs(true)}
+        onMouseLeave={() => {
+            setHoveringTabs(false);
+            setOpenSubmenu(null);
+        }}
+    >
         <div className={`${s.buttonCol} col-12`} ref={tabElmRef}>
             {
                 options.map(option => {
@@ -180,22 +171,24 @@ const avatarTabs = props => {
                         option.id === activeSubmenu?.id ||
                         option.id === openSubmenu?.id && hoveringTabs ||
                         option.id === getListTab()?.id && !activeSubmenu?.id;
-                    return <div key={option.name} className={s.vTab} onClick={() => {
+                    return <div key={option.id || option.name} className={s.vTab} onClick={(e) => {
+                        e.stopPropagation();
                         if (option.tabType) {
                             props.setTabType(option.tabType);
                             setActiveSubmenu({
                                 ...option,
                                 clickImmune: true,
                             });
+                            setOpenSubmenu(null);
+                        } else if (activeSubmenu?.id === option.id) {
+                            setActiveSubmenu(null);
                         } else {
                             setActiveSubmenu(option);
                         }
                         if (props.onChange) props.onChange(option);
                         if (option.onClick) option.onClick(option);
                     }}
-                                onMouseOver={() => setOpenSubmenu(option)}
-                                onMouseEnter={() => setHoveringSubmenuTabs(true)}
-                                onMouseLeave={() => setHoveringSubmenuTabs(false)}
+                                onMouseEnter={() => setOpenSubmenu(option)}
                     >
                         <p className={`${!isSelected && s.vTabUnselected} ${s.vTabLabel}`}>
                             <span className={s.spanText}>
@@ -211,13 +204,11 @@ const avatarTabs = props => {
             }
         </div>
         {
-            (() => {
-                if (activeSubmenu?.element || hoveringTabs && openSubmenu?.element) {
-                    return <div className={`${s.submenuContainer} section-content`} ref={selmElmRef}>
-                        {activeSubmenu?.element || hoveringTabs && openSubmenu?.element}
-                    </div>
-                }
-            })()
+            shownSubmenu ? (
+                <div className={`${s.submenuContainer} section-content`} ref={selmElmRef}>
+                    {shownSubmenu}
+                </div>
+            ) : null
         }
     </div>
 }

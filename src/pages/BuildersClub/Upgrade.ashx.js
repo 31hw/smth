@@ -9,7 +9,7 @@ const UpgradeRedirectPage = () => {
       !/jsdom/i.test(window.navigator?.userAgent || '')
     ) {
       try {
-        window.location.replace('/premium/membership');
+        window.location.replace('/plus');
       } catch (_) {}
     }
   }, []);
@@ -20,9 +20,9 @@ const UpgradeRedirectPage = () => {
         <title>Upgrade - ROBLOX</title>
       </Head>
       <div className="section-content">
-        <p style={{ marginBottom: 12 }}>Opening Roblox Upgrade &amp; Membership...</p>
-        <a className="link2018" href="/premium/membership">
-          Continue to Roblox Membership
+        <p style={{ marginBottom: 12 }}>Opening Roblox Plus &amp; Membership...</p>
+        <a className="link2018" href="/plus">
+          Continue to Roblox Plus
         </a>
       </div>
     </div>

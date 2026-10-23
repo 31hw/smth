@@ -56,7 +56,7 @@
         "https://www.roblox.com/build*",
         "https://www.roblox.com/places/*",
         "https://www.roblox.com/universes/*",
-        "https://www.roblox.com/game-pass/*",
+        "https://www.roblox.com/game-pass/configure*",
         "https://www.roblox.com/ide/*"
       ],
       "js": ["early-main.js"],
@@ -75,7 +75,7 @@
         "https://www.roblox.com/build*",
         "https://www.roblox.com/places/*",
         "https://www.roblox.com/universes/*",
-        "https://www.roblox.com/game-pass/*",
+        "https://www.roblox.com/game-pass/configure*",
         "https://www.roblox.com/ide/*"
       ],
       "js": [

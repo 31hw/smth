@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createContainer } from 'unstated-next';
 import getFlag from '../lib/getFlag';
 import { getItemDetails, searchCatalog } from '../services/catalog';
+import { getUserIdByUsername } from '../services/users';
 import { useRouter } from 'next/router';
 
 const stringToCategory = (str = '') => {
@@ -22,53 +23,23 @@ const stringToCategory = (str = '') => {
       return 5;
     case 'bodyparts':
       return 4;
+    case 'emotes':
+    case 'avataranimations':
+      return 12;
     default:
       return 0;
   }
 };
 
-const stringToSubCategory = (str = '') => {
-  switch (String(str).toLowerCase().trim()) {
-    case 'items':
-    case 'all':
-      return '';
-    case 'hats':
-      return 'HeadAccessories';
-    case 'hair':
-      return 'HairAccessories';
-    case 'face':
-    case 'faces':
-      return 'Faces';
-    case 'packages':
-      return 'Bundles';
-    case 'shirts':
-      return 'ClassicShirts';
-    case 'tshirts':
-      return 'ClassicTShirts';
-    case 'pants':
-      return 'ClassicPants';
-    case 'gear':
-    case 'building':
-    case 'explosive':
-    case 'melee':
-    case 'musical':
-    case 'navigation':
-    case 'powerup':
-    case 'ranged':
-    case 'social':
-    case 'transport':
-      return 'Gear';
-    default:
-      return str || '';
-  }
-};
+const stringToSubCategory = (str = '') => str || '';
 
 const CatalogPageStore = createContainer(() => {
   const router = useRouter();
-  const [query, setQuery] = useState(router.query.keyword || '');
+  const initialKeyword = router.query.keyword || '';
+  const [query, setQuery] = useState(initialKeyword);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(getFlag('catalogPageLimit', 28));
-  const [category, setCategory] = useState('Featured');
+  const [category, setCategory] = useState(initialKeyword ? 'All' : 'Featured');
   const [subCategory, setSubCategory] = useState('');
   const [locked, setLocked] = useState(false);
   const [results, setResults] = useState(null);
@@ -76,24 +47,76 @@ const CatalogPageStore = createContainer(() => {
   const [nextCursor, setNextCursor] = useState(null);
   const [previousCursor, setPreviousCursor] = useState(null);
   const [cursor, setCursor] = useState(null);
+  const [cursorStack, setCursorStack] = useState([null]);
   const [sort, setSort] = useState(0);
   const [genres, setGenres] = useState([]);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [freeOnly, setFreeOnly] = useState(false);
+  const [creatorFilter, setCreatorFilter] = useState('default'); // 'default' | 'all' | 'roblox' | 'custom'
+  const [creatorName, setCreatorName] = useState('');
+  const [includeNotForSale, setIncludeNotForSale] = useState(false);
+  const reqSeq = useRef(0);
 
   useEffect(() => {
+    const mySeq = ++reqSeq.current;
     setLocked(true);
     let response = null;
-    searchCatalog({
-      category,
-      subCategory: stringToSubCategory(subCategory) || subCategory,
-      query,
-      limit,
-      cursor,
-      sort,
-    })
+
+    let creatorType = null;
+    let creatorId = null;
+    let effectiveCreatorName = null;
+    if (creatorFilter === 'roblox') {
+      creatorType = 'User';
+      creatorId = 1;
+    } else if (creatorFilter === 'custom' && creatorName.trim()) {
+      effectiveCreatorName = creatorName.trim();
+    }
+
+    const resolveCreator = async () => {
+      // Resolve a typed creator name to a numeric Roblox user id (the catalog search
+      // endpoints reliably support creatorTargetId + creatorType, but not creatorName).
+      if (!effectiveCreatorName) return { creatorType, creatorId, creatorName: null };
+      try {
+        const resolvedId = await getUserIdByUsername(effectiveCreatorName);
+        if (resolvedId) {
+          return { creatorType: 'User', creatorId: Number(resolvedId), creatorName: null };
+        }
+      } catch (_) {
+        // fall through to creatorName param
+      }
+      return { creatorType: null, creatorId: null, creatorName: effectiveCreatorName };
+    };
+
+    resolveCreator()
+      .then((creator) =>
+        searchCatalog({
+          category:
+            creatorFilter === 'all' && String(category).toLowerCase() === 'featured'
+              ? 'All'
+              : category,
+          subCategory,
+          query,
+          limit,
+          cursor,
+          sort,
+          genres,
+          minPrice,
+          maxPrice,
+          freeOnly,
+          creatorType: creator.creatorType,
+          creatorId: creator.creatorId,
+          creatorName: creator.creatorName,
+          includeNotForSale,
+        })
+      )
       .then((result) => {
         response = result || { data: [] };
         if (!Array.isArray(response.data) || response.data.length === 0) {
-          return { data: { data: [] } };
+          return { data: { data: [] }, alreadyNormalized: true };
+        }
+        if (response._normalized) {
+          return { data: { data: response.data }, alreadyNormalized: true };
         }
         return getItemDetails(
           response.data.map((v) => ({
@@ -103,38 +126,75 @@ const CatalogPageStore = createContainer(() => {
         );
       })
       .then((assetDetails) => {
+        if (mySeq !== reqSeq.current) return;
         const detailList = assetDetails?.data?.data || [];
-        const arr = [];
-        for (const item of response?.data || []) {
-          const itemType = item.itemType || 'Asset';
-          const details = detailList.find(
-            (v) => v.id === item.id && (v.itemType || 'Asset') === itemType
-          );
-          if (details) arr.push(details);
+        let arr = [];
+        if (assetDetails?.alreadyNormalized) {
+          arr = detailList;
+        } else {
+          for (const item of response?.data || []) {
+            const itemType = item.itemType || 'Asset';
+            const details = detailList.find(
+              (v) => v.id === item.id && (v.itemType || 'Asset') === itemType
+            );
+            if (details) arr.push(details);
+          }
         }
-        const finalResp = {
+        setResults({
           ...response,
           data: arr,
-        };
-        setResults(finalResp);
+        });
         setNextCursor(response?.nextPageCursor || null);
         setPreviousCursor(response?.previousPageCursor || null);
         setTotal(typeof response?._total === 'number' ? response._total : null);
       })
       .catch((err) => {
+        if (mySeq !== reqSeq.current) return;
         console.warn('[catalogPage] search error', err);
         setResults({ data: [] });
         setNextCursor(null);
         setPreviousCursor(null);
       })
       .finally(() => {
-        setLocked(false);
+        if (mySeq === reqSeq.current) {
+          setLocked(false);
+        }
       });
-  }, [cursor, sort, category, subCategory, genres, query, limit]);
+  }, [
+    cursor,
+    sort,
+    category,
+    subCategory,
+    genres,
+    minPrice,
+    maxPrice,
+    freeOnly,
+    creatorFilter,
+    creatorName,
+    includeNotForSale,
+    query,
+    limit,
+  ]);
 
   const clearStatesForNewQuery = () => {
     setCursor(null);
+    setCursorStack([null]);
     setPage(1);
+  };
+
+  const goToNextPage = () => {
+    if (!nextCursor) return;
+    setCursorStack((prev) => [...prev, nextCursor]);
+    setCursor(nextCursor);
+    setPage((prev) => prev + 1);
+  };
+
+  const goToPreviousPage = () => {
+    if (cursorStack.length <= 1) return;
+    const nextStack = cursorStack.slice(0, -1);
+    setCursorStack(nextStack);
+    setCursor(nextStack[nextStack.length - 1] ?? null);
+    setPage((prev) => Math.max(prev - 1, 1));
   };
 
   return {
@@ -145,7 +205,10 @@ const CatalogPageStore = createContainer(() => {
     previousCursor,
     setCursor,
     sort,
-    setSort,
+    setSort: (newSort) => {
+      clearStatesForNewQuery();
+      setSort(newSort);
+    },
     category,
     setCategory: (newCat) => {
       clearStatesForNewQuery();
@@ -163,6 +226,37 @@ const CatalogPageStore = createContainer(() => {
       clearStatesForNewQuery();
       setGenres(newGenres);
     },
+    minPrice,
+    maxPrice,
+    freeOnly,
+    setPriceFilter: ({ min = '', max = '', free = false }) => {
+      clearStatesForNewQuery();
+      setMinPrice(min);
+      setMaxPrice(max);
+      setFreeOnly(Boolean(free));
+    },
+    creatorFilter,
+    creatorName,
+    setCreator: ({ mode = 'default', name = '' }) => {
+      clearStatesForNewQuery();
+      setCreatorFilter(mode);
+      setCreatorName(name);
+    },
+    includeNotForSale,
+    setIncludeNotForSale: (val) => {
+      clearStatesForNewQuery();
+      setIncludeNotForSale(Boolean(val));
+    },
+    resetFilters: () => {
+      clearStatesForNewQuery();
+      setGenres([]);
+      setMinPrice('');
+      setMaxPrice('');
+      setFreeOnly(false);
+      setCreatorFilter('default');
+      setCreatorName('');
+      setIncludeNotForSale(false);
+    },
     query,
     setQuery: (newQuery) => {
       clearStatesForNewQuery();
@@ -175,6 +269,9 @@ const CatalogPageStore = createContainer(() => {
     },
     page,
     setPage,
+    goToNextPage,
+    goToPreviousPage,
+    hasPreviousPage: cursorStack.length > 1,
   };
 });
 

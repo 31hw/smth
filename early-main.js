@@ -56,9 +56,12 @@
       '/game/placelauncher',
       '/game/join',
       '/login/negotiate',
-      '/upgrade',
-      '/upgrades',
+      '/plus',
       '/premium',
+      '/upgrade',
+      '/upgrades/paymentmethods',
+      '/upgrades/redeem',
+      '/modcreditagreement',
     ];
     for (const prefix of passthrough) {
       if (p === prefix || p.startsWith(prefix + '/')) return false;

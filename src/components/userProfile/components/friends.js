@@ -135,10 +135,10 @@ const Friends = props => {
                   <Link href={`/users/${v.id}/profile`}>
                     <a className={s.friendLink}>
                       <span className={s.avatarWrapper}>
-                        <PlayerImage className={s.image} id={v.id} name={s.username} />
+                        <PlayerImage className={s.image} id={v.id} name={v.name || v.displayName} />
                       </span>
                       <span className={s.playerName}>
-                        {v.name} {isVerified ? <img src='/img/verified.svg' alt='Verified' style={{ width: 16, height: 16, verticalAlign: 'text-bottom', marginLeft: 4 }} /> : null}
+                        {v.name || v.displayName || 'Unknown'} {isVerified ? <img src='/img/verified.svg' alt='Verified' style={{ width: 16, height: 16, verticalAlign: 'text-bottom', marginLeft: 4 }} /> : null}
                       </span>
                     </a>
                   </Link>

@@ -1,195 +1,183 @@
-import React from "react";
-import {createUseStyles} from "react-jss";
-import CatalogPageStore from "../../stores/catalogPage";
-import CatalogPageCard from "../catalogPageCard";
-import CatalogPagination from "../catalogPagination";
-import OldSelect from "../oldSelect";
+import React from 'react';
+import { createUseStyles } from 'react-jss';
+import CatalogPageStore from '../../stores/catalogPage';
+import CatalogPageCard from '../catalogPageCard';
+import CatalogPagination from '../catalogPagination';
+import OldSelect from '../oldSelect';
 
 const useResultStyles = createUseStyles({
-    pageTitle: {
-        fontSize: '28px',
-        fontWeight: 500,
-    },
-    pageTitleAlt: {
-        fontSize: '14px',
-        fontWeight: 700,
-        opacity: 1,
-        letterSpacing: -0.2,
-    },
-    subtitleText: {
-        fontSize: '12px',
-        fontWeight: 500,
-    },
-    selectWrapper: {
-        width: '200px',
-        display: 'inline-block',
-    },
-    sortWrapper: {
-        float: 'right',
-    },
-    sortByLabel: {
-        paddingRight: '4px',
-        fontWeight: 600,
-        color: 'var(--text-color-primary)',
-    },
-    sortByLabelWrapper: {
-        display: 'inline-block',
-    },
+  pageTitle: {
+    fontSize: '26px',
+    fontWeight: 500,
+    marginBottom: 4,
+    color: 'var(--text-color-primary)',
+  },
+  pageTitleAlt: {
+    fontSize: '14px',
+    fontWeight: 700,
+    opacity: 1,
+    letterSpacing: -0.2,
+    color: 'var(--text-color-primary)',
+  },
+  subtitleText: {
+    fontSize: '12px',
+    fontWeight: 500,
+    color: 'var(--text-color-secondary)',
+  },
+  selectWrapper: {
+    width: '200px',
+    display: 'inline-block',
+  },
+  sortWrapper: {
+    float: 'right',
+  },
+  sortByLabel: {
+    paddingRight: '4px',
+    fontWeight: 600,
+    color: 'var(--text-color-primary)',
+  },
+  sortByLabelWrapper: {
+    display: 'inline-block',
+  },
 });
 
-const ResultsContainer = props => {
-    const store = CatalogPageStore.useContainer();
-    if (!props.showTopFour) {
-        return <>
-            {
-                store.results.data.map((v, i) => {
-                    return <CatalogPageCard key={v.id} {...v}></CatalogPageCard>
-                })
-            }
-        </>
-    }
-    return <>
-        {
-            store.results.data.slice(0, 4).map((v, i) => {
-                return <CatalogPageCard key={v.id} {...v} mode='large'></CatalogPageCard>
-            })
-        }
-        {
-            store.results.data.slice(4).map((v, i) => {
-                return <CatalogPageCard key={v.id} {...v}></CatalogPageCard>
-            })
-        }
+const ResultsContainer = (props) => {
+  const store = CatalogPageStore.useContainer();
+  const list = store.results?.data || [];
+  if (list.length === 0) {
+    return (
+      <div className="col-12 mt-3 mb-3">
+        <p style={{ color: 'var(--text-color-secondary)' }}>No items found matching your filters.</p>
+      </div>
+    );
+  }
+  if (!props.showTopFour) {
+    return (
+      <>
+        {list.map((v) => (
+          <CatalogPageCard key={`${v.itemType || 'Asset'}-${v.id}`} {...v} />
+        ))}
+      </>
+    );
+  }
+  return (
+    <>
+      {list.slice(0, 4).map((v) => (
+        <CatalogPageCard key={`${v.itemType || 'Asset'}-${v.id}`} {...v} mode="large" />
+      ))}
+      {list.slice(4).map((v) => (
+        <CatalogPageCard key={`${v.itemType || 'Asset'}-${v.id}`} {...v} />
+      ))}
     </>
-}
+  );
+};
 
 const getDisplayNameForCombination = (cat, subCat) => {
-    let suffix = '';
-    let prefix = '';
-    if (subCat) {
-        switch (subCat.toLowerCase()) {
-            case 'all':
-                if (!cat) {
-                    return 'All';
-                }
-                suffix = 'all';
-                break;
-            case 'clothing':
-                return 'All Clothing';
-            case 'teeshirt':
-            case 'teeshirts':
-            case 'tshirt':
-                suffix = 'T-Shirts';
-                break;
-            case 'pants':
-                suffix = 'Pants';
-                break;
-            case 'shirts':
-            case 'shirt':
-                suffix = 'Shirts';
-                break;
-            case 'hats':
-                suffix = 'Hats';
-                break;
-            case 'accessories':
-                suffix = 'Hats';
-                break;
-            case 'packages':
-                suffix = 'Packages';
-                break;
-            case 'face':
-            case 'faces':
-                suffix = 'Faces';
-                break;
-            case 'gear':
-            case 'gears':
-                suffix = 'Gears';
-                break;
-        }
-    }
-    if (cat) {
-        switch (cat.toLowerCase()) {
-            case 'collectibles':
-                if (!subCat) {
-                    return 'Collectibles';
-                }
-                prefix = 'Collectible';
-                break;
-        }
-    }
-    return prefix + ' ' + suffix;
-}
+  const c = String(cat || '').toLowerCase();
+  const s = String(subCat || '').toLowerCase();
 
-const CatalogPageResults = props => {
-    const s = useResultStyles();
-    const store = CatalogPageStore.useContainer();
-    let showTopFour = store.category === 'Featured';
-    
-    const getTitle = () => {
-        if (store.category === 'Featured') {
-            return <h1 className={s.pageTitle}>Featured Items on ROBLOX</h1>;
-        }
-        let title = getDisplayNameForCombination(store.category, store.subCategory);
-        const currentOffset = Math.trunc(store.page / store.limit + 1) || 0;
-        const limit = store.limit < store.results.data.length ? store.limit : store.results.data.length;
-        
-        const moreAvailable = store.nextCursor !== null;
-        
-        return <>
-            <h1 className={s.pageTitleAlt}>{title.toUpperCase()}</h1>
-            <p className={s.subtitleText}>Showing {store.results.data.length === 0 ? '0' : currentOffset.toLocaleString()} {moreAvailable ? '- ' + limit.toLocaleString() : ''} of {(typeof store.total === 'number' ? store.total : 'many').toLocaleString()} results</p>
+  if (c === 'emotes') {
+    if (s === 'bundleanimations') return 'Animation Bundles';
+    if (s === 'allanimations') return 'Avatar Animations';
+    return 'Emotes';
+  }
+  if (c === 'bodyparts') {
+    if (s === 'heads') return 'Heads';
+    if (s === 'dynamicheads') return 'Dynamic Heads';
+    if (s === 'faces') return 'Faces';
+    if (s === 'packages') return 'Packages';
+    return 'All Body Parts';
+  }
+  if (c === 'clothing') {
+    if (s === 'hats') return 'Hats';
+    if (s === 'hair') return 'Hair';
+    if (s === 'accessories') return 'Accessories';
+    if (s === 'shirts' || s === 'shirt') return 'Shirts';
+    if (s === 'tshirts' || s === 'teeshirt' || s === 'tshirt') return 'T-Shirts';
+    if (s === 'pants') return 'Pants';
+    if (s === 'packages') return 'Packages';
+    return 'All Clothing';
+  }
+  if (c === 'gear') {
+    if (!s || s === 'all') return 'All Gear';
+    return `Gear - ${s.charAt(0).toUpperCase() + s.slice(1)}`;
+  }
+  if (c === 'collectibles') {
+    if (s === 'faces') return 'Collectible Faces';
+    if (s === 'hats' || s === 'accessories') return 'Collectible Hats';
+    if (s === 'gear') return 'Collectible Gear';
+    return 'Collectibles';
+  }
+  return 'All Items';
+};
+
+const CatalogPageResults = () => {
+  const s = useResultStyles();
+  const store = CatalogPageStore.useContainer();
+  const isFeatured = String(store.category || '').toLowerCase() === 'featured';
+  const showTopFour = isFeatured && !store.subCategory;
+
+  const getTitle = () => {
+    if (isFeatured) {
+      return (
+        <>
+          <h1 className={s.pageTitle}>Featured Items on ROBLOX</h1>
+          <p className={s.subtitleText}>Recent items by ROBLOX</p>
         </>
+      );
     }
-    
-    return <div className='row' style={store.locked ? {opacity: '0.25'} : undefined}>
-        <div className='col-6'>
-            {getTitle()}
+    const title = getDisplayNameForCombination(store.category, store.subCategory);
+    const dataLen = store.results?.data?.length || 0;
+    const currentOffset = dataLen === 0 ? 0 : (store.page - 1) * store.limit + 1;
+    const endOffset = (store.page - 1) * store.limit + dataLen;
+    const moreAvailable = store.nextCursor !== null;
+
+    return (
+      <>
+        <h1 className={s.pageTitleAlt}>{title.toUpperCase()}</h1>
+        <p className={s.subtitleText}>
+          Showing {dataLen === 0 ? '0' : `${currentOffset.toLocaleString()} - ${endOffset.toLocaleString()}`}{' '}
+          {moreAvailable ? 'of many results' : dataLen === 1 ? 'result' : 'results'}
+        </p>
+      </>
+    );
+  };
+
+  return (
+    <div className="row" style={store.locked ? { opacity: '0.25' } : undefined}>
+      <div className="col-6">{getTitle()}</div>
+      <div className="col-6">
+        <div className={s.sortWrapper}>
+          <div className={s.sortByLabelWrapper}>
+            <span className={s.sortByLabel}>Sort By: </span>
+          </div>
+          <div className={s.selectWrapper}>
+            <OldSelect
+              value={store.sort}
+              onChange={(newSort) => {
+                store.setSort(parseInt(newSort, 10));
+              }}
+              options={[
+                { key: '0', value: isFeatured ? 'Recent (Roblox)' : 'Relevance' },
+                { key: '3', value: 'Recently updated' },
+                { key: '2', value: 'Bestselling' },
+                { key: '1', value: 'Most Favorited' },
+                { key: '4', value: 'Price (Low to High)' },
+                { key: '5', value: 'Price (High to Low)' },
+              ]}
+              disabled={store.locked}
+            />
+          </div>
         </div>
-        <div className='col-6'>
-            <div className={s.sortWrapper}>
-                <div className={s.sortByLabelWrapper}>
-                    <span className={s.sortByLabel}>Sort By: </span>
-                </div>
-                <div className={s.selectWrapper}>
-                    <OldSelect onChange={(newSort) => {
-                        store.setSort(parseInt(newSort, 10));
-                    }} options={[
-                        {
-                            key: '0',
-                            value: 'Relevance',
-                        },
-                        {
-                            key: '3',
-                            value: 'Recently updated',
-                        },
-                        {
-                            key: '4',
-                            value: 'Price (Low to High)',
-                        },
-                        {
-                            key: '5',
-                            value: 'Price (High to Low)',
-                        },
-                        {
-                            key: '6',
-                            value: 'RAP (Low to High)',
-                        },
-                        {
-                            key: '7',
-                            value: 'RAP (High to Low)',
-                        },
-                    ]} disabled={store.locked}></OldSelect>
-                </div>
-            </div>
+      </div>
+      <div className="col-12">
+        <div className="row">
+          {store.results ? <ResultsContainer showTopFour={showTopFour} /> : null}
         </div>
-        <div className='col-12'>
-            <div className='row'>
-                {
-                    store.results ? <ResultsContainer showTopFour={showTopFour}></ResultsContainer> : null
-                }
-            </div>
-            <CatalogPagination></CatalogPagination>
-        </div>
+        <CatalogPagination />
+      </div>
     </div>
-}
+  );
+};
 
 export default CatalogPageResults;

@@ -45,11 +45,13 @@ async function doRobloxFetch({ method, url, data, csrfToken, headers = {} }, ret
   }
 
   try {
+    const parsedTarget = new URL(url);
+    const isDevForum = parsedTarget.hostname.toLowerCase() === 'devforum.roblox.com';
     const resp = await fetch(url, {
       method: upperMethod,
       headers: reqHeaders,
       body,
-      credentials: 'include',
+      credentials: isDevForum ? 'omit' : 'include',
     });
 
     const respHeaders = {};

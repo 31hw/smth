@@ -18,8 +18,14 @@ The repository root itself **is** the unpacked extension and contains all UI sou
 
 ## Features & Scope
 
-- **47 Classic 2016 + 2019 Routes:** Home, Games, Experience Details (with native `roblox-player:` launch via `auth.roblox.com/v1/authentication-ticket`), Catalog, Asset/Bundle/Game Pass Details, Collectibles, 3D/2D Avatar Editor, Profiles, Friends, Inventory, Favorites, Groups & Group Admin, Messages, Money & Transactions, Trades, Promo Codes, Badges, Archive Forums, and Account Settings.
-- **Native Upgrade / Plus & Robux Pages:** Upgrade (`/premium/membership`, `/upgrade`, `/BuildersClub/Upgrade.ashx`) and Buy Robux (`/upgrades/robux`) open Roblox's native Plus/Premium & Robux pages directly.
+- **49 Classic 2016 + 2019 Routes:** Home, Games, Experience Details (with native `roblox-player:` launch via `auth.roblox.com/v1/authentication-ticket`), Catalog, Asset/Bundle/Game Pass Details, Collectibles, 3D/2D Avatar Editor, Profiles, Friends, Inventory, Favorites, Groups & Group Admin, Messages, Money & Transactions, Trades, Promo Codes, Badges, Developer Forum, Buy Robux, and Account Settings.
+- **Native Upgrade / Plus:** `/plus`, `/premium/*`, `/upgrade`, `/upgrades/paymentmethods` and `/modcreditagreement/*` stay on Roblox's original native Plus / payment pages (no 404s), while `/BuildersClub/Upgrade.ashx` forwards to Roblox Plus.
+- **Classic Buy Robux Page:** `/upgrades/robux` renders the classic Robux store layout with live balances and real Roblox checkout links; the navbar tab is **Robux** (replacing the old Builders Club tab).
+- **Working Catalog:** Featured shows recent items by ROBLOX, Emotes shows live emote animations, and every Body Parts / Clothing / Gear / Collectibles sub-tab works with Creator, Price, Genre, Free and Off-Sale filters.
+- **Working Avatar Editor:** Recent / Clothing / Body / Animations / Outfits lists load owned assets through live inventory + avatar-inventory endpoints, including bundles/packages, dynamic heads, layered clothing and gear.
+- **Roblox Developer Forum:** Forums read live `devforum.roblox.com` categories, topics and posts (not the retired forum API), with working avatars, pagination and direct DevForum posting links.
+- **Messages:** Inbox / Sent / Notifications / Archive load from `privatemessages.roblox.com`, with working read/archive actions and safely sanitized HTML announcements (links keep working).
+- **Friends:** Friend lists and the dashboard show full avatars (not headshots) with names and verified badges.
 - **Optimized Footprint:**
   - `bundles/content-ui.js` (`~881 KB`) + pruned `bundles/content-ui.css` (`~73 KB`) load on replaced pages.
   - `bundles/vendor-3d.js` (`~555 KB`, tree-shaken Three.js r137 + Roblox OBJ/MTL loaders) is **lazy-loaded on demand** only when viewing a 3D avatar.

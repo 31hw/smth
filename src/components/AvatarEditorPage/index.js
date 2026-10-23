@@ -211,20 +211,25 @@ function AvatarEditor() {
      * @constructor
      */
     async function AssetTypeClick(item, e) {
+        if (e) e.stopPropagation();
+        page.setActiveSubmenu(null);
+        page.setOpenSubmenu(null);
         if (debounce.current || listItemMetadata.current.assetType === item.typeId) return;
         debounce.current = true;
-        page.setSelectedList({
-            tab: item.tabId,
-            subTab: item.name,
-        });
-        if (!item.tabType) {
-            setActiveTab(0);
-            await page.LoadAssetTypeToList(item.typeId);
-        } else {
-            setActiveTab(item.tabType);
+        try {
+            page.setSelectedList({
+                tab: item.tabId,
+                subTab: item.name,
+            });
+            if (!item.tabType) {
+                setActiveTab(0);
+                await page.LoadAssetTypeToList(item.typeId);
+            } else {
+                setActiveTab(item.tabType);
+            }
+        } finally {
+            debounce.current = false;
         }
-        await wait(0.5);
-        debounce.current = false;
     }
     
     /**
@@ -233,21 +238,26 @@ function AvatarEditor() {
      * @constructor
      */
     async function RecentClick(item, e) {
+        if (e) e.stopPropagation();
+        page.setActiveSubmenu(null);
+        page.setOpenSubmenu(null);
         // DO NOT PUT === HERE!!
         if (debounce.current || listItemMetadata.current.recentType == item.typeId) return;
         debounce.current = true;
-        page.setSelectedList({
-            tab: item.tabId,
-            subTab: item.name,
-        });
-        if (!item.tabType) {
-            setActiveTab(0);
-            await page.LoadRecentItemsToList(item.typeId);
-        } else {
-            setActiveTab(item.tabType);
+        try {
+            page.setSelectedList({
+                tab: item.tabId,
+                subTab: item.name,
+            });
+            if (!item.tabType) {
+                setActiveTab(0);
+                await page.LoadRecentItemsToList(item.typeId);
+            } else {
+                setActiveTab(item.tabType);
+            }
+        } finally {
+            debounce.current = false;
         }
-        await wait(0.5);
-        debounce.current = false;
     }
     
     useEffect(async () => {
@@ -522,6 +532,11 @@ function AvatarEditor() {
                                     {
                                         name: "Head",
                                         typeId: 17,
+                                        tabId: "body",
+                                    },
+                                    {
+                                        name: "Dynamic Heads",
+                                        typeId: 79,
                                         tabId: "body",
                                     },
                                     {

@@ -53,8 +53,13 @@ const OldVerticalTabs = props => {
   const { options } = props;
   const [selected, setSelected] = useState(props.default ? options.find(v => v.name === props.default) : options[0]);
   useEffect(() => {
-    setSelected(props.default ? options.find(v => v.name === props.default) : options[0]);
-  }, [props.default, options]);
+    setSelected(prev => {
+      if (props.default) {
+        return options.find(v => v.name === props.default) || prev || options[0];
+      }
+      return prev || options[0];
+    });
+  }, [props.default]);
   return <div className='row'>
     <div className={`${s.buttonCol} col-12`}>
       {

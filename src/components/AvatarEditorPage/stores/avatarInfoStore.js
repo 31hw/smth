@@ -161,7 +161,7 @@ const AvatarInfoStore = createContainer(() => {
         
         setIsRendering(false);
         debo.current = false;
-    }, [isRendering]);
+    }, [isRendering, auth.userId]);
     
     useEffect(() => {
         if (!modifiedScaling) return;
@@ -215,6 +215,19 @@ const AvatarInfoStore = createContainer(() => {
         /** @type SortedItem */
         let newAsset = modifiedAsset;
         setModifiedAsset(null);
+
+        if (newAsset.isBundle) {
+            (async () => {
+                if (newAsset.bundleOutfitId) {
+                    await AvatarService.wearOutfit({ outfitId: newAsset.bundleOutfitId });
+                } else if (Array.isArray(newAsset.bundleAssetIds) && newAsset.bundleAssetIds.length > 0) {
+                    const mergedIds = [...new Set([...wearingAssets.map(d => d.assetId), ...newAsset.bundleAssetIds])];
+                    await AvatarService.setWearingAssets({ assetIds: mergedIds });
+                }
+                await ReloadAvatar();
+            })();
+            return;
+        }
         
         // Limiting
         if (!IsNegative(newAsset.assetId)) {
@@ -255,7 +268,10 @@ const AvatarInfoStore = createContainer(() => {
             }
             
             (async () => {
-                await AvatarService.setWearingAssets({ assetIds: updated.map(d => d.assetId) });
+                await AvatarService.setWearingAssets({
+                    assetIds: updated.map(d => d.assetId),
+                    assets: updated,
+                });
                 await GetUpdatedAvatar();
             })();
             
@@ -316,11 +332,11 @@ const AvatarInfoStore = createContainer(() => {
  * @type {{Accessories: number[], Emotes: number[], LimitToOne: number[], Unlimited: number[], All: number[]}}
  */
 export const AssetTypeCategory = {
-    Accessories: [8, 41, 42, 43, 44, 45, 46, 47], // all limit of 15
+    Accessories: [8, 41, 42, 43, 44, 45, 46, 47, 64, 65, 66, 67, 68, 69, 70, 71, 72], // accessories + layered clothing
     Emotes: [61], // all limit of 8
-    LimitToOne: [50, 51, 52, 53, 54, 55, 17, 27, 28, 29, 30, 31, 18, 19, 12, 11, 2],
+    LimitToOne: [50, 51, 52, 53, 54, 55, 17, 79, 27, 28, 29, 30, 31, 18, 19, 12, 11, 2],
     Unlimited: [24],
-    All: [50, 51, 52, 53, 54, 55, 17, 27, 28, 29, 30, 31, 32, 18, 19, 12, 11, 2, 24, 61, 8, 41, 42, 43, 44, 45, 46, 47]
+    All: [50, 51, 52, 53, 54, 55, 17, 79, 27, 28, 29, 30, 31, 32, 18, 19, 12, 11, 2, 24, 61, 8, 41, 42, 43, 44, 45, 46, 47, 64, 65, 66, 67, 68, 69, 70, 71, 72]
 }
 
 export function IsNegative(int) {

@@ -210,7 +210,7 @@ const NavSideBar = () => {
               url="/promocodes"
               icon="icon-nav-blog"
             />
-            <a href="/premium/membership" style={{ textDecoration: 'none' }}>
+            <a href="/plus" style={{ textDecoration: 'none' }}>
               <p className={s.upgradeNowButton}>Upgrade Now</p>
             </a>
           </div>

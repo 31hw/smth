@@ -64,6 +64,7 @@ import SearchUsersPage from './pages/search/users';
 import BadgesPage from './pages/Badges.aspx';
 import CollectiblesPage from './pages/collectibles';
 import PromoCodesPage from './pages/promocodes';
+import BuyRobuxPage from './pages/upgrades/robux';
 import BuildersClubUpgradePage from './pages/BuildersClub/Upgrade.ashx';
 import ReportCenterPage from './pages/internal/report-center';
 import ForumDefaultPage from './pages/Forum/Default.aspx';
@@ -114,6 +115,7 @@ const PAGE_REGISTRY = {
   '/Badges.aspx': BadgesPage,
   '/collectibles': CollectiblesPage,
   '/promocodes': PromoCodesPage,
+  '/upgrades/robux': BuyRobuxPage,
   '/BuildersClub/Upgrade.ashx': BuildersClubUpgradePage,
   '/internal/report-center': ReportCenterPage,
   '/Forum/Default.aspx': ForumDefaultPage,
