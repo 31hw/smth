@@ -128,7 +128,11 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export function createApi({
   fetchImpl,
   storage,
-  timeoutMs = 12_000,
+  timeoutMs = 5_000,
+  /** Total time a single request may spend walking the relay list. */
+  budgetMs = 5_000,
+  /** How long a host that refused everything is skipped for. */
+  deadForMs = 60_000,
   ttl = { asset: 6 * 60 * 60 * 1000, catalog: 10 * 60 * 1000, rolimons: 12 * 60 * 60 * 1000 },
   log = () => {},
   rng = Math.random,
@@ -136,6 +140,8 @@ export function createApi({
   const doFetch = fetchImpl || ((...args) => globalThis.fetch(...args));
   const cache = createCache(storage);
   const relayPreference = new Map(Object.entries(cache.get('relay-prefs', Infinity) || {}));
+  /** host -> { until, message }: skip hosts that just refused every relay. */
+  const deadHosts = new Map();
 
   function rememberRelay(host, relayId) {
     relayPreference.set(host, relayId);
@@ -151,8 +157,9 @@ export function createApi({
   }
 
   async function fetchWithTimeout(url, options = {}) {
+    const limit = options.timeoutMs ?? timeoutMs;
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
-    const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+    const timer = controller ? setTimeout(() => controller.abort(), limit) : null;
     try {
       return await doFetch(url, { ...options, signal: controller ? controller.signal : options.signal });
     } finally {
@@ -166,12 +173,29 @@ export function createApi({
    */
   async function getJson(url) {
     const host = safeHost(url);
+
+    const dead = deadHosts.get(host);
+    if (dead && Date.now() < dead.until) {
+      // Already refused everything a moment ago: fail immediately instead of
+      // making the user wait through the same relay walk again.
+      throw new HttpError(dead.message, { status: 0, url, relay: 'skipped' });
+    }
+
     const errors = [];
+    const started = Date.now();
 
     for (const relay of relayOrder(host)) {
+      const left = budgetMs - (Date.now() - started);
+      if (left <= 0) {
+        errors.push('out of time');
+        break;
+      }
       const target = relay.build(url);
       try {
-        const response = await fetchWithTimeout(target, { headers: { Accept: 'application/json' } });
+        const response = await fetchWithTimeout(target, {
+          headers: { Accept: 'application/json' },
+          timeoutMs: Math.min(timeoutMs, left),
+        });
         if (!response.ok) {
           errors.push(`${relay.id}: HTTP ${response.status}`);
           // A real answer from the upstream API — trying more relays won't help.
@@ -198,7 +222,9 @@ export function createApi({
       }
     }
 
-    throw new HttpError(`Could not reach ${host}. ${errors.slice(0, 3).join(' | ')}`, { status: 0, url });
+    const message = `Could not reach ${host}. ${errors.slice(0, 3).join(' | ')}`;
+    deadHosts.set(host, { until: Date.now() + deadForMs, message });
+    throw new HttpError(message, { status: 0, url });
   }
 
   /* ------------------------------ Rolimons ------------------------------- */
@@ -243,7 +269,8 @@ export function createApi({
     const category = options.category ?? pick(CATALOG_CATEGORIES, rng);
     const sortType = options.sortType ?? pick(CATALOG_SORTS, rng);
     const maxPrice = options.maxPrice ?? pick(PRICE_CEILINGS, rng);
-    const limit = options.limit ?? 30;
+    // Small pages on purpose: the roll only ever verifies one item at a time.
+    const limit = options.limit ?? 10;
 
     const params = new URLSearchParams({
       Limit: String(limit),
@@ -431,8 +458,10 @@ export function createDemoApi({ rng = Math.random } = {}) {
       return parseRolimonsPayload(DEMO_ROLIMONS);
     },
     async searchCatalog() {
-      await sleep(90);
-      return { data: shuffledOnce.map(toDemoEntity), url: 'demo://catalog', cached: false };
+      await sleep(60);
+      // one small page, like the real thing — decoys included so the rules show
+      const page = shuffledOnce.slice(0, 10).map(toDemoEntity);
+      return { data: page, url: 'demo://catalog', cached: false };
     },
     async getAssetDetails(id) {
       await sleep(120);
@@ -446,8 +475,8 @@ export function createDemoApi({ rng = Math.random } = {}) {
       const hit = DEMO_ASSETS.find((asset) => asset.id === Number(id));
       return demoThumbnail(id, hit ? hit.name : `Item ${id}`);
     },
-    sampleIds({ count = 8 }) {
-      const pool = DEMO_ASSETS.filter((a) => a.id > 2_000_000_000).map((a) => a.id);
+    sampleIds({ count = 6 } = {}) {
+      const pool = DEMO_ASSETS.map((asset) => asset.id);
       const ids = [];
       for (let i = 0; i < count; i += 1) ids.push(pool[Math.floor(rng() * pool.length)]);
       return ids;

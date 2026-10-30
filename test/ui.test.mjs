@@ -44,9 +44,12 @@ function asset({ id, name, created, price = 100, limited = false, offSale = fals
 
 function fakeApi(pool, rolimonsIds = []) {
   const byId = new Map(pool.map((entity) => [entity.id, entity]));
+  let search = 0;
   return {
     async searchCatalog() {
-      return { data: pool, url: 'test' };
+      // the pipeline asks for one page and picks one item from it
+      const row = pool[Math.min(search++, pool.length - 1)];
+      return { data: row ? [row] : [], url: 'test' };
     },
     async getAssetDetails(id) {
       const entity = byId.get(Number(id));
@@ -66,7 +69,7 @@ function fakeApi(pool, rolimonsIds = []) {
 async function clickRoll(dom) {
   const button = dom.window.document.querySelector('#roll');
   button.click();
-  for (let i = 0; i < 500 && button.disabled; i += 1) {
+  for (let i = 0; i < 900 && button.disabled; i += 1) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
 }
@@ -234,7 +237,7 @@ test('nothing eligible means a quiet message, no fake item', async () => {
   assert.equal(doc.querySelector('#roll').disabled, false);
 });
 
-test('when nothing answers at all, it says so and falls back to sample data', async () => {
+test('when nothing answers at all it just says "Unavailable" — no stand-in item', async () => {
   const dom = installDom();
   boot({
     params: new URLSearchParams(''),
@@ -255,9 +258,11 @@ test('when nothing answers at all, it says so and falls back to sample data', as
 
   await clickRoll(dom);
   const doc = dom.window.document;
-  assert.equal(doc.querySelector('#item').classList.contains('has-item'), true);
-  assert.ok(doc.querySelector('#item-title').textContent.length > 0);
-  assert.match(doc.querySelector('#status').textContent, /Sample data/);
+  assert.equal(doc.querySelector('#status').textContent, 'Unavailable');
+  assert.equal(doc.querySelector('#item').classList.contains('has-item'), false);
+  assert.equal(doc.querySelector('#item-title').textContent, '');
+  assert.equal(doc.querySelector('#item-thumb').getAttribute('src'), null);
+  assert.equal(doc.querySelector('#roll').disabled, false);
 });
 
 test('demo mode drives the real pipeline end to end', async () => {

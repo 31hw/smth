@@ -7,31 +7,28 @@
  *   - created between 2008 and 2019
  *   - buyable right now, and not a limited
  *
- * Strategy, cheapest checks first:
- *   1. Roblox catalog searches, walked category by category (gear, face,
- *      accessories) with shuffled keywords/sorts/price caps for variety.
- *   2. Rolimons' item feed as a second pool (it powers the "on Rolimons" link).
- *   3. Last resort: random asset ids inside the historical id window for the
- *      chosen years, plus a burst of neighbouring ids.
+ * Deliberately gentle on the APIs: each attempt grabs ONE small search page,
+ * picks ONE random item out of it, and verifies that single item before moving
+ * on. Nothing is fired in parallel, so a roll is a handful of requests in a
+ * row rather than a burst.
  *
- * Every candidate is verified against economy.roblox.com/v2/assets/{id}/details.
- * If nothing qualifies we say so — nothing is silently downgraded.
+ * Sources, in order:
+ *   1. Roblox catalog, cycling gear -> faces -> accessories.
+ *   2. Rolimons' item feed (one id at a time).
+ *   3. Random asset ids from the 2008–2019 id windows.
+ *
+ * If the APIs can't be reached at all the roll reports "unavailable"; if they
+ * answer but nothing fits the rules it reports "no item matched". Either way
+ * there is no fake fallback item.
  */
 
-import {
-  DEFAULT_OPTIONS,
-  buildItemView,
-  createdYear,
-  evaluateEntity,
-  isRobloxMade,
-  randomInt,
-  assetTypeGroup,
-} from './core.js';
-
-export const CONCURRENCY = 5;
+import { DEFAULT_OPTIONS, buildItemView, evaluateEntity } from './core.js';
 
 /** Roblox catalog categories: 2 = gear, 4 = faces, 5/11 = accessories. */
 export const SEARCH_CATEGORIES = [2, 4, 5, 11];
+
+/** How many single-item attempts a roll makes before giving up. */
+export const MAX_ATTEMPTS = 14;
 
 /**
  * @param {object} args
@@ -52,20 +49,20 @@ export async function roll({
 } = {}) {
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const stats = {
-    seen: 0,
-    queries: 0,
+    attempts: 0,
     requests: 0,
-    details: 0, // candidates the catalog API actually answered for
-    catalogOk: 0, // catalog searches that returned something
+    details: 0, // items the details API actually answered for
+    catalogOk: 0, // searches that came back with something
     rejected: {},
   };
 
-  /** Rolimons' list, loaded in the background so it never delays stage 1. */
+  /** Rolimons' list — one request, loaded at most once per roll. */
   let rolimonsItems = [];
+  let rolimonsPromise = null;
 
   const started = Date.now();
+  const deadline = started + 40_000;
   const tried = new Set();
-  const deadline = started + 45_000;
 
   function reject(reason) {
     stats.rejected[reason] = (stats.rejected[reason] || 0) + 1;
@@ -79,154 +76,185 @@ export async function roll({
     return Date.now() > deadline || isCancelled();
   }
 
-  /** Verify one candidate id; returns the entity when it qualifies. */
-  async function consider(id, source) {
-    if (!Number.isFinite(id) || id <= 0 || tried.has(id)) return null;
-    tried.add(id);
-    stats.seen += 1;
+  /* ---------------------------- one candidate -------------------------------- */
+
+  /** Verify a single candidate id. Returns the entity when it qualifies. */
+  async function consider(entity, source) {
+    if (!entity || tried.has(entity.id) || expired()) return null;
+    tried.add(entity.id);
+    stats.details += 1;
     stats.requests += 1;
 
-    let entity;
+    const verdict = evaluateEntity(entity, opts);
+    if (verdict.ok) {
+      onLog(`${entity.id}: ${entity.name} (${entity.year})`, 'good');
+      return entity;
+    }
+
+    for (const reason of verdict.reasons) reject(reason);
+    onLog(`${entity.id}: rejected — ${verdict.labels.join(', ')}`, 'muted');
+    return null;
+  }
+
+  /** Fetch the details for one id, then verify it. */
+  async function considerId(id, source) {
+    if (!Number.isFinite(id) || id <= 0 || tried.has(id) || expired()) return null;
+    stats.requests += 1;
     try {
-      const result = await api.getAssetDetails(id);
-      entity = result.entity;
-      stats.details += 1;
+      const { entity } = await api.getAssetDetails(id);
+      return await consider(entity, source);
     } catch (error) {
       reject('no-details');
       onLog(`${id}: ${error.message}`, 'muted');
       return null;
     }
-
-    const verdict = evaluateEntity(entity, opts);
-    if (verdict.ok) {
-      onLog(`${id}: ${entity.name} (${entity.year})`, 'good');
-      return entity;
-    }
-
-    for (const reason of verdict.reasons) reject(reason);
-    onLog(`${id}: rejected — ${verdict.labels.join(', ')}`, 'muted');
-    return null;
   }
 
-  async function runPool(ids, source, concurrency = CONCURRENCY) {
-    const queue = [...ids];
-    const workers = Array.from({ length: Math.min(concurrency, Math.max(1, queue.length)) }, async () => {
-      while (queue.length) {
-        if (expired()) return null;
-        const id = queue.shift();
-        progress();
-        const hit = await consider(id, source);
-        if (hit) return hit;
-      }
-      return null;
-    });
-    const results = await Promise.all(workers);
-    return results.find(Boolean) || null;
-  }
+  // One request, started once and reused everywhere below (it also decides
+  // where the picture links). It never blocks the roll.
+  void loadRolimons();
 
-  /* --------------------------- background: rolimons --------------------------- */
+  /* ------------------------- stage 1: catalog, one at a time ------------------ */
 
-  const rolimonsReady = (async () => {
-    try {
-      const items = await api.rolimonsItems();
-      rolimonsItems = Array.isArray(items) ? items : [];
-      onLog(`rolimons list: ${rolimonsItems.length} documented items`, 'muted');
-    } catch (error) {
-      onLog(`rolimons unavailable: ${error.message}`, 'warn');
-    }
-    return rolimonsItems;
-  })();
+  const catalogAttempts = 8;
+  let blankSearches = 0;
 
-  /* ------------------------------ stage 1: catalog ---------------------------- */
-
-  const rounds = 8;
-  for (let i = 0; i < rounds; i += 1) {
-    if (expired()) break;
-
+  for (let i = 0; i < catalogAttempts && !expired(); i += 1) {
     const category = SEARCH_CATEGORIES[i % SEARCH_CATEGORIES.length];
+    stats.attempts += 1;
+    progress({ stage: 'catalog' });
+
     let batch;
     try {
-      stats.queries += 1;
-      progress({ stage: 'catalog' });
+      stats.requests += 1;
       batch = await api.searchCatalog({ category });
-      if (batch.data.length) stats.catalogOk += 1;
-      onLog(`catalog category ${category}: ${batch.data.length} candidates`, 'muted');
     } catch (error) {
-      onLog(`catalog query failed: ${error.message}`, 'warn');
-      await api.sleep?.(200);
+      blankSearches += 1;
+      onLog(`catalog search failed: ${error.message}`, 'warn');
+      // Two dead searches in a row means the network is blocking us, not
+      // that this particular category is empty.
+      if (blankSearches >= 2 && stats.catalogOk === 0) break;
+      await api.sleep?.(150);
       continue;
     }
 
-    // Cheap local pre-filter: skip candidates the search row already proves
-    // are wrong, but still verify anything with missing metadata (a search row
-    // may not carry the creation date, and that's the whole point of the year
-    // window). Rules that fire here are counted like any other rejection.
-    const usable = batch.data.filter((entity) => {
-      if (!entity || tried.has(entity.id)) return false;
-      const verdict = evaluateEntity(entity, opts);
-      if (verdict.ok) return true;
-      if (verdict.reasons.includes('unknown-created')) return true;
-      for (const reason of verdict.reasons) reject(reason);
-      return false;
-    });
+    const rows = (batch.data || []).filter((entity) => entity && !tried.has(entity.id));
+    if (!rows.length) {
+      onLog(`catalog category ${category}: nothing returned`, 'muted');
+      continue;
+    }
+    stats.catalogOk += 1;
+    blankSearches = 0;
+    onLog(`catalog category ${category}: ${rows.length} results`, 'muted');
 
-    const hit = await runPool(
-      usable.map((entity) => entity.id),
-      'catalog',
-    );
-    if (hit) return await finish(hit, 'catalog');
+    // ONE item per page: take a random row, and at most two more rows from the
+    // same page if the first ones are already disqualified by their own data.
+    for (let pickIndex = 0; pickIndex < 3 && rows.length; pickIndex += 1) {
+      const index = Math.floor(rng() * rows.length);
+      const [entity] = rows.splice(index, 1);
+
+      const verdict = evaluateEntity(entity, opts);
+      if (!verdict.ok && !verdict.reasons.includes('unknown-created')) {
+        // The search row already proves it's wrong (wrong kind, wrong year,
+        // limited, off sale, community upload) — no details call needed.
+        for (const reason of verdict.reasons) reject(reason);
+        tried.add(entity.id);
+        continue;
+      }
+
+      const hit = await consider(entity, 'catalog');
+      if (hit) return await finish(hit, 'catalog');
+      break;
+    }
   }
 
-  /* ------------------------------ stage 2: rolimons --------------------------- */
+  /* ------------------------- stage 2: Rolimons, one id at a time -------------- */
 
-  progress({ stage: 'rolimons' });
-  await rolimonsReady;
+  if (!expired()) {
+    progress({ stage: 'rolimons' });
+    await loadRolimons();
+  }
 
-  if (rolimonsItems.length) {
-    const limiteds = new Set(rolimonsItems.filter((row) => row.rap || row.value).map((row) => row.id));
-    const plain = rolimonsItems.filter((row) => !limiteds.has(row.id)).map((row) => row.id);
-    const sample = [...plain.slice(0, 30), ...rolledPick(plain, 10, rng)];
-    const hit = await runPool(sample, 'rolimons');
+  // Rolimons rows carry trading numbers for limiteds; skip those first.
+  const rolimonsIds = shuffle(
+    rolimonsItems.filter((row) => !(row.rap > 0 || row.value > 0 || row.demand > 0)).map((row) => row.id),
+    rng,
+  );
+
+  for (const id of rolimonsIds.slice(0, 4)) {
+    if (expired()) break;
+    stats.attempts += 1;
+    progress({ stage: 'rolimons' });
+    const hit = await considerId(id, 'rolimons');
     if (hit) return await finish(hit, 'rolimons');
   }
 
-  /* ------------------------- stage 3: id-space crawling ----------------------- */
+  /* ---------------------- stage 3: id sampling, one at a time ----------------- */
 
-  for (let round = 0; round < 3 && !expired(); round += 1) {
-    progress({ stage: 'sampling' });
-    const sampled = api.sampleIds ? api.sampleIds({ count: 24 }) : [];
-    const hit = await runPool(sampled, 'sampled', 5);
-    if (hit) return await finish(hit, 'sampled');
+  // If neither the catalog nor Rolimons answered anything, the details API is
+  // almost certainly blocked too — don't make the user wait for it.
+  const silent = stats.catalogOk === 0 && rolimonsItems.length === 0;
+  if (!silent) {
+    const sampled = api.sampleIds ? api.sampleIds({ count: 6 }) : [];
+    for (const id of sampled) {
+      if (expired()) break;
+      stats.attempts += 1;
+      progress({ stage: 'sampling' });
+      const hit = await considerId(id, 'sampled');
+      if (hit) return await finish(hit, 'sampled');
+    }
   }
+
+  /* -------------------------------- verdict --------------------------------- */
+
+  const answered = stats.catalogOk > 0 || stats.details > 0;
 
   return {
     ok: false,
     item: null,
     stats,
     elapsedMs: Date.now() - started,
-    message: 'No item matched this time. Roll again.',
+    reason: answered ? 'no-match' : 'unavailable',
+    message: answered ? 'No item matched. Try again.' : 'Unavailable.',
   };
 
   /* -------------------------------- helpers --------------------------------- */
 
-  async function finish(entity, source) {
-    // Give the Rolimons list a moment so the link can point at its item page,
-    // but never let a slow feed delay the result for long.
-    if (!rolimonsItems.length) await Promise.race([rolimonsReady, wait(1200)]);
+  /** One request, memoised, and never allowed to stall a finished roll. */
+  function loadRolimons() {
+    if (!rolimonsPromise) {
+      rolimonsPromise = (async () => {
+        try {
+          const list = await api.rolimonsItems();
+          rolimonsItems = Array.isArray(list) ? list : [];
+          onLog(`rolimons list: ${rolimonsItems.length} items`, 'muted');
+        } catch (error) {
+          rolimonsItems = [];
+          onLog(`rolimons unavailable: ${error.message}`, 'warn');
+        }
+        return rolimonsItems;
+      })();
+    }
+    return rolimonsPromise;
+  }
 
+  async function finish(entity, source) {
+    // Whether Rolimons knows the item decides where the picture links, so give
+    // the list a short window — but don't let a slow feed hold up the result.
+    if (!rolimonsItems.length) await Promise.race([loadRolimons(), wait(2500)]);
     const tracked = rolimonsItems.some((row) => row.id === entity.id);
     const item = buildItemView(entity, {
       source: api.demo ? 'demo' : source,
       trackedOnRolimons: tracked,
     });
 
-    // Demo mode has no reachable Roblox CDN, so it hands us inline SVG art.
+    // Sample mode has no reachable CDN, so it hands us inline art instead.
     if (api.demo && typeof api.resolveThumbnail === 'function') {
       try {
-        const localThumb = await api.resolveThumbnail(entity.id);
-        if (localThumb) item.thumbnail = localThumb;
+        const local = await api.resolveThumbnail(entity.id);
+        if (local) item.thumbnail = local;
       } catch {
-        /* keep the Roblox CDN url */
+        /* keep the CDN url */
       }
     }
 
@@ -234,20 +262,20 @@ export async function roll({
   }
 }
 
-function rolledPick(list, count, rng) {
-  if (!list.length) return [];
-  const out = [];
-  for (let i = 0; i < count; i += 1) out.push(list[Math.floor(rng() * list.length)]);
-  return out;
-}
-
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shuffle(list, rng = Math.random) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 /** Shared helper so the UI + tests agree on the "why" a roll failed. */
 export function rejectionSummary(stats) {
   return Object.entries(stats.rejected || {}).sort((a, b) => b[1] - a[1]);
 }
-
-export { randomInt, createdYear, assetTypeGroup };

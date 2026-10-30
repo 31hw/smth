@@ -51,36 +51,23 @@ async function doRoll() {
   setStatus(status, 'Rolling…');
 
   try {
-    let result = await roll({
+    const result = await roll({
       api: state.api,
       options: OPTIONS,
       onLog: () => {},
       onProgress: () => {},
     });
 
-    // If the live APIs answered nothing at all, the browser is being blocked
-    // by CORS/network rules rather than the item filters. Say so plainly and
-    // roll with the bundled sample data instead of pretending it failed.
-    const nothingAnswered = result.stats.catalogOk === 0 && result.stats.details === 0;
-    if (!result.ok && nothingAnswered && !state.demo && !state.api?.demo) {
-      state.demo = true;
-      state.api = createDemoApi();
-      result = await roll({ api: state.api, options: OPTIONS });
-      if (result.ok) {
-        render(result.item);
-        setStatus(status, 'Sample data — Roblox and Rolimons were not reachable.');
-        return;
-      }
-    }
-
     if (result.ok) {
       render(result.item);
       setStatus(status, '');
     } else {
-      setStatus(status, 'No item matched that time. Roll again.');
+      // "Unavailable" = the APIs never answered. "No item matched" = they did,
+      // but nothing passed the rules. No stand-in items either way.
+      setStatus(status, result.reason === 'unavailable' ? 'Unavailable' : 'No item matched. Try again.');
     }
-  } catch (error) {
-    setStatus(status, error?.message || 'Something went wrong. Try again.');
+  } catch {
+    setStatus(status, 'Unavailable');
   } finally {
     state.rolling = false;
     button.disabled = false;

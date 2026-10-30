@@ -28,27 +28,35 @@ npm run dev       # http://localhost:4173
 No npm needed to just look at it — any static server works, e.g.
 `python3 -m http.server 4173`.
 
-Offline preview: `http://localhost:4173/?demo=1` runs the whole pipeline against
-bundled sample data (useful when rolimons.com / roblox.com aren't reachable).
+There's an opt-in dev switch, `http://localhost:4173/?demo=1`, which runs the
+same pipeline against bundled sample data. It is never used automatically — the
+live page only ever shows real items or "Unavailable".
 
 ## How a roll works
 
-1. **Catalog** — walks Roblox catalog searches category by category
-   (2 = gear, 4 = faces, 5 and 11 = accessories) with shuffled keywords, sorts
-   and price caps, always scoped to the Roblox account.
-2. **Rolimons** — its public item feed is loaded in the background as a second
-   pool, and it decides whether the picture links to Rolimons.
-3. **Id sampling** — last resort: random asset ids from the historical id
-   windows for 2008–2019.
+Gentle by design: **one item at a time**, one request after another — no
+batches, no parallel bursts.
 
-Candidates are pre-filtered with the data the search already gives us, then the
-survivors are confirmed one by one via
-`economy.roblox.com/v2/assets/{id}/details` (real creation date, real price,
-real limited flags, real creator). If nothing qualifies, the page says
-"No item matched that time" — it never falls back to a newer or limited item.
+1. **Pick** — a small catalog page (10 results, category cycling gear → faces →
+   accessories, random keyword/sort/price cap), one random item taken from it.
+2. **Check** — that single item, and only that one, is confirmed via
+   `economy.roblox.com/v2/assets/{id}/details` (real creation date, real price,
+   real limited flags, real creator).
+3. **Repeat** — up to 14 single-item attempts, falling back to one Rolimons id
+   at a time and then to random asset ids from the 2008–2019 id windows.
 
-If *nothing at all* answers (blocked network / CORS on every host), the page
-says so and switches to the bundled sample data so you still see the flow.
+The Rolimons item list is a single request per roll (cached for 12 h); it is
+also what decides whether the picture links to Rolimons.
+
+Two honest failure states, no stand-ins:
+
+- **"Unavailable"** — nothing answered at all (blocked network / CORS). Hosts
+  that just refused every relay are skipped, so this takes about five seconds
+  instead of a minute.
+- **"No item matched. Try again."** — the APIs answered, but nothing passed the
+  rules.
+
+Either way the page never shows an invented or downgraded item.
 
 ```
 index.html      the whole page: heading, roll button, name / picture / year
@@ -68,14 +76,16 @@ Keyboard: <kbd>R</kbd> rolls again.
 `rolimons.com` and `economy.roblox.com` don't reliably send
 `Access-Control-Allow-Origin`, so the page tries the direct request first and
 then public read-only relays (allorigins, corsproxy.io, codetabs, thingproxy),
-remembering the one that worked. If your network blocks all of them the page
-shows a short message and you can use `?demo=1`. For a real deployment, point
-the two constants at the top of `js/api.js` at your own small proxy.
+remembering the one that worked. Each request has a 5 s budget across all
+relays, and a host that just refused everything is skipped for a minute — so a
+blocked network shows **Unavailable** in about five seconds, not a minute. For a
+real deployment, point the two constants at the top of `js/api.js` at your own
+small proxy.
 
 ## Tests
 
 ```bash
-npm test        # 37 tests, no network
+npm test        # 38 tests, no network
 ```
 
 - `test/core.test.mjs` — year window edges, the asset-type allowlist, Roblox-only
@@ -83,7 +93,8 @@ npm test        # 37 tests, no network
   payload parsing.
 - `test/roll.test.mjs` — the pipeline against a fake API: one decoy per rule
   (limited, off sale, 2007, 2021, shirt, community upload), category walk,
-  Rolimons-sourced hits, honest failure, total API failure.
+  Rolimons-sourced hits, the two distinct failure states, and a check that no
+  two API calls ever overlap (one candidate at a time).
 - `test/ui.test.mjs` — boots the real `index.html` in jsdom: the page contains
   only the button and the empty fields, a roll fills name / picture / year /
   Rolimons address, both links open in a new tab, the picture never stays
