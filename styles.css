@@ -1,0 +1,162 @@
+/* Rollimons — plain, classic styling.
+   No gradients, no shadows, no glow: borders, spacing and one accent colour. */
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: Verdana, Geneva, Tahoma, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px 64px;
+}
+
+.page {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 24px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 26px;
+  font-weight: normal;
+  letter-spacing: 0.02em;
+}
+
+/* -------------------------------- button --------------------------------- */
+
+.roll {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #1a1a1a;
+  background: #f0f0f0;
+  border: 1px solid #767676;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.roll:hover:not(:disabled) {
+  background: #e6e6e6;
+  border-color: #4d4d4d;
+}
+
+.roll:active:not(:disabled) {
+  background: #dcdcdc;
+}
+
+.roll:disabled {
+  color: #767676;
+  cursor: default;
+}
+
+.roll:focus-visible,
+.item-link:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* -------------------------------- status --------------------------------- */
+
+.status {
+  min-height: 21px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: #666666;
+}
+
+/* --------------------------------- item ---------------------------------- */
+
+/* Empty until the first roll: no heading, no placeholder box, no border. */
+.item {
+  display: none;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #dddddd;
+}
+
+.item.has-item {
+  display: block;
+}
+
+.item-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.item-link {
+  display: block;
+  width: 250px;
+  max-width: 100%;
+  height: 250px;
+  margin: 0 auto;
+  border: 1px solid #cccccc;
+  background: #fafafa;
+  text-decoration: none;
+}
+
+.item-thumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.item-year {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: #444444;
+}
+
+/* ------------------------------ rolimons link ---------------------------- */
+
+.item-rolimons-row {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.item-rolimons {
+  color: #0000ee;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.item-rolimons:visited {
+  color: #551a8b;
+}
+
+.item-rolimons:hover {
+  color: #0000cc;
+}
+
+/* ------------------------------- narrow ---------------------------------- */
+
+@media (max-width: 380px) {
+  .item-link {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+}

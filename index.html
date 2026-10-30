@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rollimons</title>
+    <meta
+      name="description"
+      content="Roll a random Roblox gear, face or accessory item from 2008 to 2019. Roblox-made only, no limiteds, nothing off sale."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1 class="title">Rollimons</h1>
+
+      <button id="roll" class="roll" type="button">Roll</button>
+
+      <p id="status" class="status" role="status" aria-live="polite" hidden></p>
+
+      <section id="item" class="item" aria-live="polite">
+        <h2 id="item-title" class="item-title" hidden></h2>
+        <a id="item-link" class="item-link" href="#" target="_blank" rel="noopener noreferrer" hidden>
+          <img id="item-thumb" class="item-thumb" alt="" width="250" height="250" />
+        </a>
+        <p id="item-year" class="item-year" hidden></p>
+        <p class="item-rolimons-row">
+          <a
+            id="item-rolimons"
+            class="item-rolimons"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            hidden
+          ></a>
+        </p>
+      </section>
+    </main>
+
+    <script type="module">
+      import { boot } from './js/app.js';
+      boot();
+    </script>
+  </body>
+</html>
