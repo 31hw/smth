@@ -87,7 +87,17 @@ async function doRoll() {
   }
 }
 
-/** Show exactly three things: the name, the picture and the year. */
+/** A neutral grey square, used when the real thumbnail can't be loaded. */
+const PLACEHOLDER_THUMB =
+  'data:image/svg+xml;charset=utf-8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="250" height="250"><rect width="250" height="250" fill="#e9e9e9"/></svg>',
+  );
+
+/**
+ * Show the name, the picture, the creation year and the Rolimons link —
+ * nothing else.
+ */
 function render(item) {
   state.item = item;
 
@@ -95,27 +105,33 @@ function render(item) {
   const link = document.querySelector('#item-link');
   const thumb = document.querySelector('#item-thumb');
   const year = document.querySelector('#item-year');
+  const rolimonsLink = document.querySelector('#item-rolimons');
   const section = document.querySelector('#item');
 
   title.textContent = item.title;
   title.hidden = false;
 
+  // This used to be attached after `src`, which meant an instantly-loading
+  // image (a cached one, or the inline SVG the demo data returns) fired its
+  // load event before the handler existed — so the picture stayed invisible.
+  // The element is simply visible now, with a grey square as the fallback.
+  thumb.onerror = () => {
+    thumb.onerror = null;
+    thumb.src = PLACEHOLDER_THUMB;
+  };
+  thumb.alt = item.title;
+  thumb.src = item.thumbnail;
+
   link.href = item.href;
   link.hidden = false;
-  thumb.src = item.thumbnail;
-  thumb.alt = item.title;
-  thumb.onerror = () => {
-    // Never show a broken image icon.
-    thumb.removeAttribute('src');
-    thumb.alt = '';
-    thumb.hidden = true;
-  };
-  thumb.onload = () => {
-    thumb.hidden = false;
-  };
 
   year.textContent = item.year ? `(${item.year})` : '';
   year.hidden = !item.year;
+
+  // The plain Rolimons address, under the year, opening in a new tab.
+  rolimonsLink.href = item.rolimonsUrl;
+  rolimonsLink.textContent = `www.rolimons.com/item/${item.id}`;
+  rolimonsLink.hidden = false;
 
   section.classList.add('has-item');
 }

@@ -80,18 +80,19 @@ test('the page shows only a heading, a roll button and an empty item area', () =
   assert.equal(doc.querySelector('#item').classList.contains('has-item'), false);
   assert.equal(doc.querySelector('#item-title').textContent, '');
   assert.equal(doc.querySelector('#item-year').textContent, '');
+  assert.equal(doc.querySelector('#item-rolimons').textContent, '');
   assert.equal(doc.querySelector('#item-thumb').getAttribute('src'), null);
   assert.equal(doc.querySelector('#status').hidden, true);
 
   // nothing about price, creator, ids, history, options or logs
   const text = doc.body.textContent.toLowerCase();
-  for (const banned of ['price', 'creator', 'asset id', 'history', 'rolimons', 'limited', 'filter']) {
+  for (const banned of ['price', 'creator', 'asset id', 'history', 'limited', 'filter']) {
     assert.equal(text.includes(banned), false, `page should not mention "${banned}"`);
   }
   assert.equal(doc.querySelectorAll('input, select, ol, ul, dl, details').length, 0);
 });
 
-test('a roll renders exactly the name, the picture and the year', async () => {
+test('a roll renders the name, the picture, the year and the Rolimons link', async () => {
   const dom = installDom();
   boot({
     params: new URLSearchParams(''),
@@ -108,6 +109,49 @@ test('a roll renders exactly the name, the picture and the year', async () => {
   assert.equal(doc.querySelector('#item-thumb').alt, 'Linked Sword');
   assert.equal(doc.querySelector('#status').hidden, true);
   assert.equal(doc.querySelector('#roll').disabled, false);
+
+  // the Rolimons address sits under the year and opens in a new tab
+  const rolimons = doc.querySelector('#item-rolimons');
+  assert.equal(rolimons.textContent, 'www.rolimons.com/item/44');
+  assert.equal(rolimons.getAttribute('href'), 'https://www.rolimons.com/item/44');
+  assert.equal(rolimons.getAttribute('target'), '_blank');
+  assert.match(rolimons.getAttribute('rel'), /noopener/);
+});
+
+test('the picture is never left hidden (regression: load fired before the handler)', async () => {
+  const dom = installDom();
+  boot({
+    params: new URLSearchParams(''),
+    api: fakeApi([asset({ id: 48, name: 'Star Hair', created: '2017-01-01T00:00:00Z', assetTypeId: 41 })]),
+  });
+  await clickRoll(dom);
+  const doc = dom.window.document;
+  const thumb = doc.querySelector('#item-thumb');
+
+  // an instantly-loading image (cached / inline SVG) must still be visible
+  assert.notEqual(thumb.getAttribute('hidden'), '');
+  assert.equal(thumb.hasAttribute('hidden'), false);
+  assert.match(thumb.getAttribute('src'), /assetId=48/);
+
+  // and a broken image degrades to a grey square instead of disappearing
+  thumb.onerror?.();
+  assert.equal(thumb.hasAttribute('hidden'), false);
+  assert.match(thumb.getAttribute('src'), /^data:image\/svg\+xml/);
+});
+
+test('both links open in a new tab', async () => {
+  const dom = installDom();
+  boot({
+    params: new URLSearchParams(''),
+    api: fakeApi([asset({ id: 49, name: 'Classic Fedora', created: '2012-01-01T00:00:00Z', assetTypeId: 8 })]),
+  });
+  await clickRoll(dom);
+  const doc = dom.window.document;
+  for (const selector of ['#item-link', '#item-rolimons']) {
+    const el = doc.querySelector(selector);
+    assert.equal(el.getAttribute('target'), '_blank', selector);
+    assert.match(el.getAttribute('rel'), /(noopener|noreferrer)/, selector);
+  }
 });
 
 test('the picture links to a page that exists', async () => {
@@ -227,6 +271,7 @@ test('demo mode drives the real pipeline end to end', async () => {
   assert.equal(doc.querySelector('#item').classList.contains('has-item'), true);
   assert.ok(doc.querySelector('#item-title').textContent.length > 0);
   assert.match(doc.querySelector('#item-year').textContent, /^\((2008|2009|201[0-9])\)$/);
+  assert.match(doc.querySelector('#item-rolimons').textContent, /^www\.rolimons\.com\/item\/\d+$/);
   assert.match(doc.querySelector('#item-thumb').getAttribute('src'), /^data:image\/svg\+xml/);
   assert.match(doc.querySelector('#item-link').getAttribute('href'), /^https:\/\/www\.(rolimons|roblox)\.com\//);
 });

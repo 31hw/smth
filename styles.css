@@ -130,6 +130,27 @@ body {
   color: #444444;
 }
 
+/* ------------------------------ rolimons link ---------------------------- */
+
+.item-rolimons-row {
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.item-rolimons {
+  color: #0000ee;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.item-rolimons:visited {
+  color: #551a8b;
+}
+
+.item-rolimons:hover {
+  color: #0000cc;
+}
+
 /* ------------------------------- narrow ---------------------------------- */
 
 @media (max-width: 380px) {

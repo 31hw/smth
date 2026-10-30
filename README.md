@@ -1,7 +1,8 @@
 # Rollimons
 
-Click **Roll** and get one random Roblox item: its **name**, its **picture** and
-its **(year)**. Nothing else on the page.
+Click **Roll** and get one random Roblox item: its **name**, its **picture**, its
+**(year)**, and its Rolimons address (`www.rolimons.com/item/<id>`) underneath.
+Nothing else on the page. The picture and the address both open in a new tab.
 
 Behind that, every roll is filtered to:
 
@@ -14,7 +15,8 @@ Behind that, every roll is filtered to:
 | Availability        | must still be for sale (not off sale)              |
 
 The picture links to the item: the Rolimons page when Rolimons tracks it,
-otherwise the Roblox catalog page (so the link never dead-ends).
+otherwise the Roblox catalog page (so the picture never dead-ends). The text
+link under the year always points at the Rolimons item page.
 
 ## Run it
 
@@ -73,7 +75,7 @@ the two constants at the top of `js/api.js` at your own small proxy.
 ## Tests
 
 ```bash
-npm test        # 35 tests, no network
+npm test        # 37 tests, no network
 ```
 
 - `test/core.test.mjs` — year window edges, the asset-type allowlist, Roblox-only
@@ -83,8 +85,9 @@ npm test        # 35 tests, no network
   (limited, off sale, 2007, 2021, shirt, community upload), category walk,
   Rolimons-sourced hits, honest failure, total API failure.
 - `test/ui.test.mjs` — boots the real `index.html` in jsdom: the page contains
-  only the button and three empty fields, a roll fills exactly name / picture /
-  year, the link target, re-rolling, the sample-data fallback, demo mode end to
-  end, and a check that the CSS has no gradients, shadows or rgba neon.
+  only the button and the empty fields, a roll fills name / picture / year /
+  Rolimons address, both links open in a new tab, the picture never stays
+  hidden (regression test), re-rolling, the sample-data fallback, demo mode end
+  to end, and a check that the CSS has no gradients, shadows or rgba neon.
 
 Not affiliated with Roblox or Rolimons. MIT licensed.
