@@ -1,20 +1,21 @@
 /**
  * Rollimons — the roll pipeline.
  *
- * Goal: pick ONE random, currently-purchasable, non-limited Roblox item that
- * was created on/before (or exactly in) a chosen year, and never lie about it.
+ * Goal: pick ONE random item that is
+ *   - gear, a face or an accessory
+ *   - made by Roblox
+ *   - created between 2008 and 2019
+ *   - buyable right now, and not a limited
  *
  * Strategy, cheapest checks first:
- *   1. Randomised Roblox catalog searches (keyword / category / sort / price
- *      shuffle) give fresh candidates — brand new items are usually cheap and
- *      off-sale filtering happens for free in the search itself.
- *   2. Rolimons' item list adds another pool. Rolimons has no creation dates,
- *      so those ids still go through the same verification.
+ *   1. Roblox catalog searches, walked category by category (gear, face,
+ *      accessories) with shuffled keywords/sorts/price caps for variety.
+ *   2. Rolimons' item feed as a second pool (it powers the "on Rolimons" link).
  *   3. Last resort: random asset ids inside the historical id window for the
- *      requested year, plus a burst of sequential ids ("catalog crawling").
+ *      chosen years, plus a burst of neighbouring ids.
  *
- * Every candidate is verified with economy.roblox.com/v2/assets/{id}/details.
- * If nothing qualifies we say so — no silent fallback to a newer limited.
+ * Every candidate is verified against economy.roblox.com/v2/assets/{id}/details.
+ * If nothing qualifies we say so — nothing is silently downgraded.
  */
 
 import {
@@ -22,18 +23,21 @@ import {
   buildItemView,
   createdYear,
   evaluateEntity,
-  isVisibleAssetType,
-  orderRolimonsCandidates,
+  isRobloxMade,
   randomInt,
+  assetTypeGroup,
 } from './core.js';
 
 export const CONCURRENCY = 5;
+
+/** Roblox catalog categories: 2 = gear, 4 = faces, 5/11 = accessories. */
+export const SEARCH_CATEGORIES = [2, 4, 5, 11];
 
 /**
  * @param {object} args
  * @param {object} args.api
  * @param {object} [args.options]
- * @param {() => number} [args.onProgress]
+ * @param {(stats: object) => void} [args.onProgress]
  * @param {(msg: string, level?: string) => void} [args.onLog]
  * @param {() => number} [args.rng]
  * @param {() => boolean} [args.isCancelled]
@@ -43,7 +47,6 @@ export async function roll({
   options = DEFAULT_OPTIONS,
   onProgress = () => {},
   onLog = () => {},
-  onCandidate = () => {},
   rng = Math.random,
   isCancelled = () => false,
 } = {}) {
@@ -52,10 +55,9 @@ export async function roll({
     seen: 0,
     queries: 0,
     requests: 0,
+    details: 0, // candidates the catalog API actually answered for
+    catalogOk: 0, // catalog searches that returned something
     rejected: {},
-    recent: [],
-    ignored: 0,
-    checkedRolimons: 0,
   };
 
   /** Rolimons' list, loaded in the background so it never delays stage 1. */
@@ -63,13 +65,10 @@ export async function roll({
 
   const started = Date.now();
   const tried = new Set();
-  const deadline = started + 48_000;
+  const deadline = started + 45_000;
 
-  /** @param {string} reason */
   function reject(reason) {
     stats.rejected[reason] = (stats.rejected[reason] || 0) + 1;
-    stats.recent.push(reason);
-    if (stats.recent.length > 6) stats.recent.shift();
   }
 
   function progress(patch = {}) {
@@ -80,9 +79,7 @@ export async function roll({
     return Date.now() > deadline || isCancelled();
   }
 
-  /**
-   * Verify + score one candidate id. Returns the item view when it qualifies.
-   */
+  /** Verify one candidate id; returns the entity when it qualifies. */
   async function consider(id, source) {
     if (!Number.isFinite(id) || id <= 0 || tried.has(id)) return null;
     tried.add(id);
@@ -93,6 +90,7 @@ export async function roll({
     try {
       const result = await api.getAssetDetails(id);
       entity = result.entity;
+      stats.details += 1;
     } catch (error) {
       reject('no-details');
       onLog(`${id}: ${error.message}`, 'muted');
@@ -100,9 +98,8 @@ export async function roll({
     }
 
     const verdict = evaluateEntity(entity, opts);
-    onCandidate({ id, source, entity, verdict, ok: verdict.ok });
     if (verdict.ok) {
-      onLog(`${id}: ✓ ${entity.name} (${entity.year})`, 'good');
+      onLog(`${id}: ${entity.name} (${entity.year})`, 'good');
       return entity;
     }
 
@@ -127,10 +124,8 @@ export async function roll({
     return results.find(Boolean) || null;
   }
 
-  /* --------------------------- background: rolimons ---------------------------- */
+  /* --------------------------- background: rolimons --------------------------- */
 
-  // Kick the Rolimons feed off in the background: the catalog stage is usually
-  // faster, and we only need the list to badge items as "tracked on Rolimons".
   const rolimonsReady = (async () => {
     try {
       const items = await api.rolimonsItems();
@@ -142,40 +137,37 @@ export async function roll({
     return rolimonsItems;
   })();
 
-  /* ------------------------------ stage 1: catalog ----------------------------- */
+  /* ------------------------------ stage 1: catalog ---------------------------- */
 
-  const queryCount = 6;
-  for (let i = 0; i < queryCount; i += 1) {
+  const rounds = 8;
+  for (let i = 0; i < rounds; i += 1) {
     if (expired()) break;
-    // Alternate between Roblox-made and community items so the pool stays big,
-    // unless the user explicitly asked for Roblox-made only.
-    const creator = opts.robloxCreatedOnly ? 'roblox' : i % 2 === 0 ? 'roblox' : 'any';
+
+    const category = SEARCH_CATEGORIES[i % SEARCH_CATEGORIES.length];
     let batch;
     try {
       stats.queries += 1;
       progress({ stage: 'catalog' });
-      batch = await api.searchCatalog({ creator });
-      onLog(`catalog query ${i + 1}: ${batch.data.length} candidates`, 'muted');
+      batch = await api.searchCatalog({ category });
+      if (batch.data.length) stats.catalogOk += 1;
+      onLog(`catalog category ${category}: ${batch.data.length} candidates`, 'muted');
     } catch (error) {
-      onLog(`catalog query ${i + 1} failed: ${error.message}`, 'warn');
-      try {
-        // Simplest search that exists: one keyword, no category, cheapest items.
-        batch = await api.searchCatalog({ creator, keyword: 'hat', category: null, sortType: 0, maxPrice: 25 });
-        onLog(`fallback query: ${batch.data.length} candidates`, 'muted');
-      } catch (fallbackError) {
-        onLog(`fallback query failed: ${fallbackError.message}`, 'warn');
-        await api.sleep?.(250);
-        continue;
-      }
+      onLog(`catalog query failed: ${error.message}`, 'warn');
+      await api.sleep?.(200);
+      continue;
     }
 
+    // Cheap local pre-filter: skip candidates the search row already proves
+    // are wrong, but still verify anything with missing metadata (a search row
+    // may not carry the creation date, and that's the whole point of the year
+    // window). Rules that fire here are counted like any other rejection.
     const usable = batch.data.filter((entity) => {
-      if (tried.has(entity.id)) return false;
-      if (!isVisibleAssetType(entity.assetTypeId)) {
-        stats.ignored += 1;
-        return false;
-      }
-      return true;
+      if (!entity || tried.has(entity.id)) return false;
+      const verdict = evaluateEntity(entity, opts);
+      if (verdict.ok) return true;
+      if (verdict.reasons.includes('unknown-created')) return true;
+      for (const reason of verdict.reasons) reject(reason);
+      return false;
     });
 
     const hit = await runPool(
@@ -185,30 +177,24 @@ export async function roll({
     if (hit) return await finish(hit, 'catalog');
   }
 
-  /* ------------------------------ stage 2: rolimons ---------------------------- */
+  /* ------------------------------ stage 2: rolimons --------------------------- */
 
   progress({ stage: 'rolimons' });
   await rolimonsReady;
 
-  if (opts.rolimonsOnly && rolimonsItems.length) {
-    // Rolimons shows no creation dates, so verify a slice of its order.
-    const ids = orderRolimonsCandidates(rolimonsItems, rng).slice(0, 40);
-    stats.checkedRolimons = ids.length;
-    const hit = await runPool(ids, 'rolimons');
-    if (hit) return await finish(hit, 'rolimons');
-  } else if (rolimonsItems.length) {
-    // Cheap win: Rolimons sometimes already knows the item by an id we sampled.
-    const sample = orderRolimonsCandidates(rolimonsItems, rng).slice(0, 12);
-    stats.checkedRolimons = sample.length;
+  if (rolimonsItems.length) {
+    const limiteds = new Set(rolimonsItems.filter((row) => row.rap || row.value).map((row) => row.id));
+    const plain = rolimonsItems.filter((row) => !limiteds.has(row.id)).map((row) => row.id);
+    const sample = [...plain.slice(0, 30), ...rolledPick(plain, 10, rng)];
     const hit = await runPool(sample, 'rolimons');
     if (hit) return await finish(hit, 'rolimons');
   }
 
-  /* ------------------------- stage 3: id-space crawling ------------------------ */
+  /* ------------------------- stage 3: id-space crawling ----------------------- */
 
   for (let round = 0; round < 3 && !expired(); round += 1) {
     progress({ stage: 'sampling' });
-    const sampled = api.sampleIds ? api.sampleIds({ year: opts.year, count: 20, span: 2 }) : [];
+    const sampled = api.sampleIds ? api.sampleIds({ count: 24 }) : [];
     const hit = await runPool(sampled, 'sampled', 5);
     if (hit) return await finish(hit, 'sampled');
   }
@@ -218,23 +204,20 @@ export async function roll({
     item: null,
     stats,
     elapsedMs: Date.now() - started,
-    message:
-      'No matching item this time — the catalog API refused every candidate or every one that came back was limited, off sale or too new. Try again.',
+    message: 'No item matched this time. Roll again.',
   };
 
-  /* ------------------------------- helpers ----------------------------------- */
+  /* -------------------------------- helpers --------------------------------- */
 
   async function finish(entity, source) {
-    // Best effort: give the list a moment so the item can be flagged as on
-    // Rolimons, but never let a slow feed delay the result for long.
-    if (!rolimonsItems.length) {
-      await Promise.race([rolimonsReady, wait(1500)]);
-    }
+    // Give the Rolimons list a moment so the link can point at its item page,
+    // but never let a slow feed delay the result for long.
+    if (!rolimonsItems.length) await Promise.race([rolimonsReady, wait(1200)]);
+
     const tracked = rolimonsItems.some((row) => row.id === entity.id);
     const item = buildItemView(entity, {
       source: api.demo ? 'demo' : source,
       trackedOnRolimons: tracked,
-      yearMode: opts.yearMode,
     });
 
     // Demo mode has no reachable Roblox CDN, so it hands us inline SVG art.
@@ -251,14 +234,20 @@ export async function roll({
   }
 }
 
+function rolledPick(list, count, rng) {
+  if (!list.length) return [];
+  const out = [];
+  for (let i = 0; i < count; i += 1) out.push(list[Math.floor(rng() * list.length)]);
+  return out;
+}
+
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** Shared helper so the UI + tests agree on the "why" a roll failed. */
 export function rejectionSummary(stats) {
-  const entries = Object.entries(stats.rejected || {}).sort((a, b) => b[1] - a[1]);
-  return entries;
+  return Object.entries(stats.rejected || {}).sort((a, b) => b[1] - a[1]);
 }
 
-export { randomInt, createdYear };
+export { randomInt, createdYear, assetTypeGroup };

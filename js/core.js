@@ -2,47 +2,69 @@
  * Rollimons — pure logic.
  *
  * No DOM, no network, no globals: everything in here is a plain function so it
- * can be unit-tested in Node and reused by both the UI and the roll pipeline.
+ * can be unit-tested in Node and reused by the UI and the roll pipeline.
+ *
+ * The rules of the game:
+ *   - created between 2008 and 2019 (inclusive)
+ *   - gear, face or accessory only
+ *   - made by Roblox
+ *   - not limited, not off sale
  */
 
-export const APP_NAME = 'Rollimons';
-export const DEFAULT_YEAR = 2019;
+export const MIN_YEAR = 2008;
+export const MAX_YEAR = 2019;
+
+/**
+ * Roblox asset types we accept: 8/41-47 are hats, hair and the accessory
+ * slots, 18 is a face, 19 is gear. Anything else is rejected.
+ */
+export const ALLOWED_ASSET_TYPES = Object.freeze({
+  8: 'accessory',
+  18: 'face',
+  19: 'gear',
+  41: 'accessory',
+  42: 'accessory',
+  43: 'accessory',
+  44: 'accessory',
+  45: 'accessory',
+  46: 'accessory',
+  47: 'accessory',
+});
+
+export const ALLOWED_ASSET_TYPE_IDS = Object.freeze(Object.keys(ALLOWED_ASSET_TYPES).map(Number));
+
+export function assetTypeGroup(assetTypeId) {
+  if (assetTypeId == null) return null;
+  return ALLOWED_ASSET_TYPES[Number(assetTypeId)] || null;
+}
 
 /**
  * @typedef {Object} RollOptions
- * @property {'up-to'|'exactly'} yearMode  "2019 or earlier" vs "exactly 2019"
- * @property {number} year                 the cutoff / exact year
- * @property {boolean} rolimonsOnly        only accept items Rolimons actually tracks
- * @property {boolean} robloxCreatedOnly   only accept items made by Roblox itself
+ * @property {number} minYear             earliest acceptable creation year
+ * @property {number} maxYear             latest acceptable creation year
+ * @property {boolean} robloxCreatedOnly  only accept items made by Roblox
+ * @property {number[]|null} allowedAssetTypes  null = no asset type filter
  */
 
 /** @type {RollOptions} */
 export const DEFAULT_OPTIONS = Object.freeze({
-  yearMode: 'up-to',
-  year: DEFAULT_YEAR,
-  rolimonsOnly: false,
-  robloxCreatedOnly: false,
+  minYear: MIN_YEAR,
+  maxYear: MAX_YEAR,
+  robloxCreatedOnly: true,
+  allowedAssetTypes: ALLOWED_ASSET_TYPE_IDS,
 });
-
-/**
- * Asset types that are not worn on an avatar (audio, scripts, models, decals,
- * game passes…). They are skipped so a random sample always lands on something
- * that has a real catalog thumbnail.
- */
-export const NON_VISUAL_ASSET_TYPES = new Set([1, 3, 4, 5, 6, 7, 9, 10, 13, 18, 19, 20, 29, 30, 31, 32, 33, 34, 38]);
 
 export const REASON_LABELS = {
   invalid: 'no usable data',
   'no-details': 'the catalog returned no details',
   unnamed: 'missing a name',
   'unknown-created': 'unknown creation date',
-  'too-new': 'created after the cutoff year',
-  'not-exact-year': 'not created in the chosen year',
+  'too-old': 'created before 2008',
+  'too-new': 'created after 2019',
   limited: 'limited or limited unique',
   'off-sale': 'off sale',
-  'not-wearable': 'not an avatar item',
+  'not-allowed-type': 'not gear, a face or an accessory',
   'not-roblox': 'not made by Roblox',
-  'no-rolimons-items': 'Rolimons returned no usable items',
 };
 
 /* -------------------------------------------------------------------------- */
@@ -99,11 +121,6 @@ export function createdYear(value) {
   return null;
 }
 
-export function isVisibleAssetType(assetTypeId) {
-  if (assetTypeId == null) return true; // unknown -> don't reject on this alone
-  return !NON_VISUAL_ASSET_TYPES.has(Number(assetTypeId));
-}
-
 /** Deterministic-ish Fisher–Yates shuffle with an injectable RNG (tests). */
 export function shuffle(list, rng = Math.random) {
   const out = [...list];
@@ -121,35 +138,6 @@ export function randomInt(min, max, rng = Math.random) {
 export function pick(list, rng = Math.random) {
   if (!list.length) return undefined;
   return list[Math.floor(rng() * list.length)];
-}
-
-/** Random integer inside [min, max] using crypto when available. */
-export function randomIdBetween(min, max) {
-  const span = max - min + 1;
-  const cryptoObj = globalThis.crypto;
-  if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
-    const buf = new Uint32Array(1);
-    cryptoObj.getRandomValues(buf);
-    return min + (buf[0] % span);
-  }
-  return min + Math.floor(Math.random() * span);
-}
-
-export function formatNumber(value) {
-  if (value == null || !Number.isFinite(Number(value))) return '—';
-  return Number(value).toLocaleString('en-US');
-}
-
-export function formatRobux(value) {
-  if (value == null || !Number.isFinite(Number(value)) || Number(value) <= 0) return 'Free / unknown';
-  return `R$ ${formatNumber(value)}`;
-}
-
-export function formatDate(iso) {
-  if (!iso) return '—';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return String(iso);
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 export function rolimonsUrl(id) {
@@ -330,8 +318,8 @@ function stringOrNull(value) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * The whole point of the project: a random item that is genuinely buyable,
- * not a limited, and old enough.
+ * The whole point of the project: an item that is genuinely buyable, not a
+ * limited, made by Roblox, in the 2008–2019 window, and wearable.
  *
  * @returns {{ok:boolean, reasons:string[], labels:string[]}}
  */
@@ -343,9 +331,8 @@ export function evaluateEntity(entity, options = DEFAULT_OPTIONS) {
   if (!entity.name) reasons.push('unnamed');
 
   if (entity.year == null) reasons.push('unknown-created');
-  else if (opts.yearMode === 'exactly') {
-    if (entity.year !== opts.year) reasons.push('not-exact-year');
-  } else if (entity.year > opts.year) reasons.push('too-new');
+  else if (entity.year < opts.minYear) reasons.push('too-old');
+  else if (entity.year > opts.maxYear) reasons.push('too-new');
 
   if (entity.limited) reasons.push('limited');
 
@@ -353,13 +340,21 @@ export function evaluateEntity(entity, options = DEFAULT_OPTIONS) {
   if (entity.isOffSale) reasons.push('off-sale');
   else if (!priced && entity.isForSale !== true) reasons.push('off-sale');
 
-  if (!isVisibleAssetType(entity.assetTypeId)) reasons.push('not-wearable');
-
-  if (opts.robloxCreatedOnly && entity.creatorName && !/^roblox$/i.test(entity.creatorName)) {
-    reasons.push('not-roblox');
+  if (opts.allowedAssetTypes) {
+    if (entity.assetTypeId == null || !opts.allowedAssetTypes.includes(Number(entity.assetTypeId))) {
+      reasons.push('not-allowed-type');
+    }
   }
 
+  if (opts.robloxCreatedOnly && !isRobloxMade(entity.creatorName)) reasons.push('not-roblox');
+
   return verdict(reasons);
+}
+
+/** Roblox's own account is "Roblox"; be tolerant of casing/spacing. */
+export function isRobloxMade(creatorName) {
+  if (typeof creatorName !== 'string') return false;
+  return creatorName.trim().toLowerCase() === 'roblox';
 }
 
 function verdict(reasons) {
@@ -372,34 +367,24 @@ function verdict(reasons) {
 
 /** Turn a verified entity into everything the UI needs. */
 export function buildItemView(entity, extra = {}) {
-  const view = {
+  const group = assetTypeGroup(entity.assetTypeId);
+  return {
     id: entity.id,
     title: entity.name,
     thumbnail: thumbnailUrl(entity.id),
     rolimonsUrl: rolimonsUrl(entity.id),
     robloxUrl: robloxUrl(entity.id),
-    createdIso: entity.createdIso,
-    createdLabel: formatDate(entity.createdIso),
     year: entity.year,
+    // The link the picture points at: Rolimons when it tracks the item,
+    // the Roblox catalog page otherwise (so it never 404s).
+    href: extra.trackedOnRolimons ? rolimonsUrl(entity.id) : robloxUrl(entity.id),
+    group,
     price: entity.price,
-    priceLabel: formatRobux(entity.price),
     creator: entity.creatorName || 'Unknown creator',
     assetTypeId: entity.assetTypeId,
     isLimited: entity.limited,
-    isForSale: entity.price != null && entity.price > 0,
     trackedOnRolimons: Boolean(extra.trackedOnRolimons),
     source: extra.source || entity.source || 'catalog',
-    yearMode: extra.yearMode || 'up-to',
     rolledAt: extra.rolledAt || new Date().toISOString(),
   };
-  return view;
-}
-
-/** Short human sentence describing how an item qualified. */
-export function qualificationSentence(view) {
-  const bits = [];
-  bits.push(view.yearMode === 'exactly' ? `created in ${view.year}` : `created in ${view.year} or earlier`);
-  if (view.isForSale) bits.push('still on sale');
-  bits.push('not limited');
-  return bits.join(' · ');
 }

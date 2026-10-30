@@ -29,18 +29,17 @@ export const RELAYS = [
   { id: 'thingproxy', build: (url) => `https://thingproxy.freeboard.io/fetch/${url}` },
 ];
 
+// Keywords just add variety inside a category; an empty string means "no keyword".
 const CATALOG_KEYWORDS = [
-  '', '', '', 'classic', 'hat', 'cap', 'hair', 'face', 'shades', 'sunglasses', 'fedora', 'crown',
-  'wings', 'cape', 'sword', 'armor', 'hoodie', 'suit', 'tie', 'ears', 'horn', 'halo', 'sparkle',
-  'rainbow', 'gold', 'neon', 'retro', 'pizza', 'cake', 'dragon', 'knight', 'ninja', 'wizard', 'pet',
+  '', '', '', 'classic', 'hat', 'cap', 'hair', 'shades', 'sunglasses', 'fedora', 'crown', 'ears',
+  'horn', 'halo', 'wings', 'backpack', 'helmet', 'mask', 'goggles', 'sword', 'shield', 'staff',
+  'armor', 'sparkle', 'retro', 'gold', 'rainbow',
 ];
 
-// Kept conservative on purpose: categories are a numeric enum that Roblox has
-// changed before, but these values have been stable for a long time. When a
-// query 400s, roll.js retries with the simplest possible search.
-const CATALOG_CATEGORIES = [1, 4, 5, 6, 7];
+/** 2 = gear, 4 = faces, 5/11 = accessories. */
+export const CATALOG_CATEGORIES = [2, 4, 5, 11];
 const CATALOG_SORTS = [0, 2, 4, 5];
-const PRICE_CEILINGS = [5, 10, 25, 50, 100, 250, 1000];
+const PRICE_CEILINGS = [10, 25, 50, 100, 250, 1000];
 
 /**
  * Rough Roblox asset-id windows per year. Used only as a last-resort candidate
@@ -48,6 +47,7 @@ const PRICE_CEILINGS = [5, 10, 25, 50, 100, 250, 1000];
  * to pass the same verification, so a bad guess is simply thrown away.
  */
 const ID_RANGES = {
+  2008: [100_000, 400_000],
   2009: [200_000, 900_000],
   2010: [900_000, 1_600_000],
   2011: [1_600_000, 2_600_000],
@@ -235,16 +235,15 @@ export function createApi({
    * Roblox catalog search. Returns normalised entities (no creation date —
    * the economy API is what tells us how old something is).
    *
-   * At least one of Keyword / Category has to be present; keyword-only searches
-   * are the most flexible, so they're used whenever a keyword was picked.
+   * Always scoped to the Roblox account (CreatorTargetId 1), because the game
+   * only accepts Roblox-made items.
    */
   async function searchCatalog(options = {}) {
     const keyword = options.keyword ?? pick(CATALOG_KEYWORDS, rng);
-    const category = options.category ?? (keyword ? null : pick(CATALOG_CATEGORIES, rng));
+    const category = options.category ?? pick(CATALOG_CATEGORIES, rng);
     const sortType = options.sortType ?? pick(CATALOG_SORTS, rng);
     const maxPrice = options.maxPrice ?? pick(PRICE_CEILINGS, rng);
     const limit = options.limit ?? 30;
-    const creator = options.creator ?? 'roblox';
 
     const params = new URLSearchParams({
       Limit: String(limit),
@@ -255,12 +254,9 @@ export function createApi({
     });
     if (keyword) params.set('Keyword', keyword);
     if (category != null) params.set('Category', String(category));
-    // CreatorTargetId 1 = the Roblox account. Leaving it out pulls in
-    // community uploads too, which is a much bigger (and weirder) pool.
-    if (creator === 'roblox') {
-      params.set('CreatorTargetId', '1');
-      params.set('CreatorType', 'User');
-    }
+    // CreatorTargetId 1 = the Roblox account itself.
+    params.set('CreatorTargetId', '1');
+    params.set('CreatorType', 'User');
 
     const url = `${CATALOG_SEARCH}?${params.toString()}`;
     const cacheKey = `catalog:${url}`;
@@ -302,11 +298,15 @@ export function createApi({
     }
   }
 
-  function sampleIds({ year = 2019, count = 12, span = 3 } = {}) {
+  /**
+   * Random asset ids from the historical id windows of 2008–2019. Each one is
+   * still verified, so a bad guess is simply discarded.
+   */
+  function sampleIds({ count = 20, minYear = 2008, maxYear = 2019 } = {}) {
     const ids = [];
     for (let i = 0; i < count; i += 1) {
-      const y = Math.max(2009, year - randomInt(0, span, rng));
-      const range = ID_RANGES[Math.min(2019, y)] || ID_RANGES[2019];
+      const y = randomInt(minYear, maxYear, rng);
+      const range = ID_RANGES[y] || ID_RANGES[maxYear] || ID_RANGES[2019];
       ids.push(randomInt(range[0], range[1], rng));
     }
     return ids;
@@ -359,41 +359,47 @@ function safeParse(text) {
 
 const DEMO_ROLIMONS = {
   items: [
-    [1001, 'Classic Fedora', 'CF', 0, 0, 50, 0, 0, 0, 0, 0],
+    [1001, 'Classic Fedora', 'CF', 0, 0, 0, 0, 0, 0, 0, 0],
     [2002, 'Tradable Sparkle Bucket', 'TSB', 4200, 5100, 0, 3, 1, 4800, 1, 1],
-    [3003, 'Striped Beanie', 'SB', 0, 0, 25, 0, 0, 0, 0, 0],
+    [3003, 'Striped Beanie', 'SB', 0, 0, 0, 0, 0, 0, 0, 0],
   ],
 };
 
+/** A deliberately mixed bag: decoys prove the filter is doing real work. */
 const DEMO_ASSETS = [
-  { id: 1028595, name: 'Roblox Baseball Cap', created: '2007-05-30T00:00:00Z', price: 25, sandbox: false },
-  { id: 1365767, name: 'Classic Fedora', created: '2012-04-12T00:00:00Z', price: 50, sandbox: false },
-  { id: 2603079, name: 'Vintage Denim Jacket', created: '2014-09-03T00:00:00Z', price: 15, sandbox: false },
-  { id: 4807763, name: 'Silly Spring Shoes', created: '2016-03-21T00:00:00Z', price: 80, sandbox: false },
-  { id: 91234567, name: 'Retro Neon Shades', created: '2018-07-04T00:00:00Z', price: 120, sandbox: false },
-  { id: 1234567890, name: 'Pixel Wizard Hat', created: '2019-10-14T00:00:00Z', price: 35, sandbox: false },
-  { id: 2345678901, name: 'Gingerbread Hoodie', created: '2019-12-02T00:00:00Z', price: 65, sandbox: false },
-  { id: 3456789012, name: 'Lucky Green Fedora', created: '2018-03-17T00:00:00Z', price: 45, sandbox: false },
-  { id: 4567890123, name: 'Strawberry Ice Cream Hair', created: '2017-08-11T00:00:00Z', price: 90, sandbox: false },
-  { id: 5678901234, name: 'Night Vision Goggles', created: '2015-11-19T00:00:00Z', price: 110, sandbox: false },
-  { id: 6789012345, name: 'Cosmic Cape', created: '2013-07-07T00:00:00Z', price: 200, sandbox: false },
-  { id: 7890123456, name: 'Pizza Party Hat', created: '2011-02-14T00:00:00Z', price: 30, sandbox: false },
-  { id: 2000000001, name: 'Old Limited Crown', created: '2015-02-02T00:00:00Z', price: 9999, sandbox: true, limited: true },
-  { id: 2000000002, name: 'Retired Offsale Hoodie', created: '2017-05-05T00:00:00Z', price: null, sandbox: true, offSale: true },
-  { id: 2000000003, name: 'Modern 2023 Cap', created: '2023-01-09T00:00:00Z', price: 60, sandbox: true },
+  // gear (19)
+  { id: 1092500, name: 'Linked Sword', created: '2008-06-11T00:00:00Z', price: 100, assetTypeId: 19 },
+  { id: 2401070, name: 'Paintball Gun', created: '2013-04-02T00:00:00Z', price: 500, assetTypeId: 19 },
+  { id: 6400001, name: 'Slingshot', created: '2011-09-23T00:00:00Z', price: 150, assetTypeId: 19 },
+  // face (18)
+  { id: 1182897, name: 'Winning Smile', created: '2012-02-08T00:00:00Z', price: 40, assetTypeId: 18 },
+  { id: 8452694, name: 'Chill Face', created: '2015-10-30T00:00:00Z', price: 65, assetTypeId: 18 },
+  // accessory (8 = hats, 41-47 = the newer slots)
+  { id: 1028595, name: 'Roblox Baseball Cap', created: '2008-05-30T00:00:00Z', price: 25, assetTypeId: 8 },
+  { id: 1365767, name: 'Classic Fedora', created: '2009-04-12T00:00:00Z', price: 50, assetTypeId: 8 },
+  { id: 2603079, name: 'Vintage Denim Cap', created: '2010-09-03T00:00:00Z', price: 15, assetTypeId: 8 },
+  { id: 4807763, name: 'Clockwork Shades', created: '2014-03-21T00:00:00Z', price: 80, assetTypeId: 42 },
+  { id: 91234567, name: 'Retro Neon Shades', created: '2016-07-04T00:00:00Z', price: 120, assetTypeId: 42 },
+  { id: 1234567890, name: 'Star Hair', created: '2017-10-14T00:00:00Z', price: 35, assetTypeId: 41 },
+  { id: 2345678901, name: 'Winter Scarf', created: '2018-12-02T00:00:00Z', price: 65, assetTypeId: 43 },
+  { id: 3456789012, name: 'Lucky Green Fedora', created: '2019-03-17T00:00:00Z', price: 45, assetTypeId: 8 },
+  { id: 4567890123, name: 'Bookbag', created: '2019-08-11T00:00:00Z', price: 90, assetTypeId: 46 },
+  { id: 5678901234, name: 'Night Vision Goggles', created: '2013-11-19T00:00:00Z', price: 110, assetTypeId: 8 },
+  // decoys
+  { id: 2000000001, name: 'Old Limited Crown', created: '2015-02-02T00:00:00Z', price: 9999, assetTypeId: 8, limited: true },
+  { id: 2000000002, name: 'Retired Offsale Hoodie', created: '2017-05-05T00:00:00Z', price: null, assetTypeId: 8, offSale: true },
+  { id: 2000000003, name: 'Modern 2023 Cap', created: '2023-01-09T00:00:00Z', price: 60, assetTypeId: 8 },
+  { id: 2000000004, name: 'Ancient 2007 Cap', created: '2007-01-09T00:00:00Z', price: 60, assetTypeId: 8 },
+  { id: 2000000005, name: 'Community Uploaded Hat', created: '2016-01-09T00:00:00Z', price: 60, assetTypeId: 8, creator: 'SomeBuilder' },
+  { id: 2000000006, name: 'Striped Shirt', created: '2016-01-09T00:00:00Z', price: 60, assetTypeId: 11 },
 ];
 
 function demoThumbnail(id, name) {
-  const hue = (Number(id) * 7) % 360;
+  // Plain grey box with the item name — no gradients, no flourish.
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420">
-    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="hsl(${hue} 70% 32%)"/>
-      <stop offset="1" stop-color="hsl(${(hue + 60) % 360} 80% 12%)"/>
-    </linearGradient></defs>
-    <rect width="420" height="420" fill="url(#g)"/>
-    <circle cx="210" cy="185" r="95" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="3"/>
-    <text x="210" y="300" text-anchor="middle" font-family="system-ui,sans-serif" font-size="26" fill="rgba(255,255,255,.9)">${escapeXml(name)}</text>
-    <text x="210" y="98" text-anchor="middle" font-family="system-ui,sans-serif" font-size="20" fill="rgba(255,255,255,.55)">DEMO ITEM</text>
+    <rect width="420" height="420" fill="#e9e9e9"/>
+    <rect x="0.5" y="0.5" width="419" height="419" fill="none" stroke="#bbb"/>
+    <text x="210" y="222" text-anchor="middle" font-family="Verdana,sans-serif" font-size="22" fill="#444">${escapeXml(name)}</text>
   </svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
@@ -409,26 +415,27 @@ function escapeXml(value) {
  */
 export function createDemoApi({ rng = Math.random } = {}) {
   const attempts = new Map();
+  const shuffledOnce = (() => {
+    const pool = [...DEMO_ASSETS];
+    for (let i = pool.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(rng() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool;
+  })();
 
   return {
     demo: true,
     async rolimonsItems() {
-      await sleep(120);
+      await sleep(60);
       return parseRolimonsPayload(DEMO_ROLIMONS);
     },
     async searchCatalog() {
-      await sleep(140);
-      // intentionally a mixed bag, shuffled: limiteds, off-sale items and
-      // too-new items are in here so the demo shows the filter doing its job.
-      const shuffled = [...DEMO_ASSETS];
-      for (let i = shuffled.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(rng() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return { data: shuffled.slice(0, 9).map(toDemoEntity), url: 'demo://catalog', cached: false };
+      await sleep(90);
+      return { data: shuffledOnce.map(toDemoEntity), url: 'demo://catalog', cached: false };
     },
     async getAssetDetails(id) {
-      await sleep(220);
+      await sleep(120);
       const numericId = Number(id);
       attempts.set(numericId, (attempts.get(numericId) || 0) + 1);
       const hit = DEMO_ASSETS.find((asset) => asset.id === numericId);
@@ -440,7 +447,7 @@ export function createDemoApi({ rng = Math.random } = {}) {
       return demoThumbnail(id, hit ? hit.name : `Item ${id}`);
     },
     sampleIds({ count = 8 }) {
-      const pool = DEMO_ASSETS.filter((a) => a.sandbox).map((a) => a.id);
+      const pool = DEMO_ASSETS.filter((a) => a.id > 2_000_000_000).map((a) => a.id);
       const ids = [];
       for (let i = 0; i < count; i += 1) ids.push(pool[Math.floor(rng() * pool.length)]);
       return ids;
@@ -456,13 +463,13 @@ function toDemoEntity(asset) {
     {
       AssetId: asset.id,
       Name: asset.name,
-      AssetTypeId: 8,
+      AssetTypeId: asset.assetTypeId ?? 8,
       Created: asset.created,
       PriceInRobux: asset.price,
       IsLimited: Boolean(asset.limited),
       IsLimitedUnique: Boolean(asset.limited),
       IsForSale: asset.price != null && asset.price > 0,
-      Creator: { Name: 'Roblox' },
+      Creator: { Name: asset.creator || 'Roblox' },
     },
     'demo',
   );

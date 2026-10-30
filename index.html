@@ -3,204 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Rollimons — random pre-2019 Roblox item</title>
+    <title>Rollimons</title>
     <meta
       name="description"
-      content="Roll a random Roblox item from 2019 or earlier. Skips limiteds and anything that is no longer for sale. Shows the title, thumbnail and links to Rolimons and the Roblox catalog."
+      content="Roll a random Roblox gear, face or accessory item from 2008 to 2019. Roblox-made only, no limiteds, nothing off sale."
     />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f1117'/%3E%3Cpath d='M14 24l18-10 18 10v16L32 50 14 40z' fill='none' stroke='%2348e5a0' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%2348e5a0'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <a class="skip" href="#main">Skip to content</a>
+    <main class="page">
+      <h1 class="title">Rollimons</h1>
 
-    <header class="site-header">
-      <div class="brand">
-        <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
-          <path d="M10 22l22-12 22 12v20L32 54 10 42z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" />
-          <circle cx="32" cy="32" r="6" fill="currentColor" />
-        </svg>
-        <div>
-          <h1>Rollimons</h1>
-          <p>One random Roblox item from yesteryear — no limiteds, nothing off sale.</p>
-        </div>
-      </div>
-      <div class="header-meta">
-        <span id="mode-badge" class="badge">Live</span>
-        <a class="ghost-link" href="https://www.rolimons.com" target="_blank" rel="noopener">rolimons.com ↗</a>
-      </div>
-    </header>
+      <button id="roll" class="roll" type="button">Roll</button>
 
-    <main id="main" class="layout">
-      <!-- ------------------------------------------------------------------ -->
-      <!-- left: controls + result                                             -->
-      <!-- ------------------------------------------------------------------ -->
-      <section class="panel panel-main" aria-labelledby="roll-heading">
-        <h2 id="roll-heading" class="panel-title">The roll</h2>
+      <p id="status" class="status" role="status" aria-live="polite" hidden></p>
 
-        <form id="roll-form" class="roll-form" autocomplete="off">
-          <div class="roll-row">
-            <button id="roll" type="submit" class="primary">
-              <span class="dice" aria-hidden="true">🎲</span>
-              <span id="roll-label">Roll a random item</span>
-            </button>
-            <button id="cancel" type="button" class="secondary" hidden>Stop</button>
-          </div>
-
-          <fieldset id="options" class="options">
-            <legend>Filters</legend>
-
-            <label class="field">
-              <span id="year-label">Year (or earlier)</span>
-              <span class="field-inline">
-                <select id="year-mode" name="year-mode">
-                  <option value="up-to">or earlier</option>
-                  <option value="exactly">exactly</option>
-                </select>
-                <input id="year" name="year" type="number" min="2006" max="2026" step="1" value="2019" inputmode="numeric" />
-              </span>
-            </label>
-
-            <label class="check">
-              <input id="rolimons-only" type="checkbox" />
-              <span>
-                <strong>Rolimons-tracked only</strong>
-                <em>Only items with a Rolimons page. Slower — Rolimons has no creation dates.</em>
-              </span>
-            </label>
-
-            <label class="check">
-              <input id="roblox-only" type="checkbox" />
-              <span>
-                <strong>Made by Roblox</strong>
-                <em>Skip community uploads.</em>
-              </span>
-            </label>
-
-            <p class="options-hint">
-              Always excluded: <strong>limited / limited unique</strong> and <strong>off-sale</strong> items.
-            </p>
-          </fieldset>
-        </form>
-
-        <div class="status-bar" role="status" aria-live="polite">
-          <span id="status-text" data-tone="idle">Ready when you are</span>
-          <span class="status-stats" title="Candidates inspected / API requests made / rejections">
-            <span><b id="stat-seen">0</b> checked</span>
-            <span><b id="stat-requests">0</b> requests</span>
-            <span><b id="stat-rejected">0</b> rejected</span>
-          </span>
-        </div>
-
-        <div id="error" class="error" hidden>
-          <p id="error-text"></p>
-          <p class="error-hint">
-            The catalog APIs may be blocking the browser. Try again, or open
-            <a href="?demo=1">demo mode</a> to preview the flow with sample data.
-          </p>
-          <button id="dismiss-error" type="button" class="link-button">Dismiss</button>
-        </div>
-
-        <article id="result" class="result" aria-live="polite">
-          <div id="placeholder" class="placeholder">
-            <div class="placeholder-art" aria-hidden="true">
-              <span>?</span>
-            </div>
-            <p><strong>Nothing rolled yet.</strong></p>
-            <p class="muted">
-              Hit <kbd>R</kbd> or the button above. You'll get a title, a thumbnail and links
-              straight to Rolimons and the Roblox catalog page.
-            </p>
-          </div>
-
-          <div class="item-body">
-            <div class="item-media">
-              <img id="item-thumb" alt="" width="420" height="420" decoding="async" />
-              <span id="tracked-pill" class="pill pill-good" hidden>On Rolimons</span>
-              <span id="source-pill" class="pill pill-muted">—</span>
-            </div>
-
-            <div class="item-info">
-              <h3 id="item-title" class="item-title">—</h3>
-              <p id="item-qualify" class="item-qualify">—</p>
-
-              <dl class="facts">
-                <div><dt>Created</dt><dd><span id="item-created">—</span> <span class="fact-year">(<span id="item-year">—</span>)</span></dd></div>
-                <div><dt>Price</dt><dd id="item-price">—</dd></div>
-                <div><dt>Creator</dt><dd id="item-creator">—</dd></div>
-                <div><dt>Asset ID</dt><dd id="item-id">—</dd></div>
-              </dl>
-
-              <div class="item-actions">
-                <a id="item-rolimons" class="button-link primary-link" href="#" target="_blank" rel="noopener">
-                  Rolimons page ↗
-                </a>
-                <a id="item-roblox" class="button-link" href="#" target="_blank" rel="noopener">
-                  Roblox catalog ↗
-                </a>
-                <button id="copy-link" type="button" class="button-link">Copy link</button>
-                <button id="again" type="button" class="button-link">Roll again</button>
-              </div>
-
-              <details class="embed">
-                <summary>Get an embed snippet</summary>
-                <p class="muted">Paste anywhere that accepts HTML — shows the thumbnail and links to the Rolimons page.</p>
-                <button id="copy-embed" type="button" class="link-button">Copy embed HTML</button>
-              </details>
-            </div>
-          </div>
-        </article>
+      <section id="item" class="item" aria-live="polite">
+        <h2 id="item-title" class="item-title" hidden></h2>
+        <a id="item-link" class="item-link" href="#" target="_blank" rel="noopener" hidden>
+          <img id="item-thumb" class="item-thumb" alt="" width="250" height="250" hidden />
+        </a>
+        <p id="item-year" class="item-year" hidden></p>
       </section>
-
-      <!-- ------------------------------------------------------------------ -->
-      <!-- right: history + log                                                -->
-      <!-- ------------------------------------------------------------------ -->
-      <aside class="sidebar">
-        <section class="panel" aria-labelledby="history-heading">
-          <div class="panel-head">
-            <h2 id="history-heading" class="panel-title">Session history <span class="count" id="history-count">0</span></h2>
-            <button id="clear-history" type="button" class="link-button" hidden>Clear</button>
-          </div>
-          <p id="history-empty" class="muted small">Rolled items stack up here. Click one to bring it back.</p>
-          <ol id="history-list" class="history"></ol>
-        </section>
-
-        <section class="panel" aria-labelledby="log-heading">
-          <div class="panel-head">
-            <h2 id="log-heading" class="panel-title">Why not that one?</h2>
-            <span class="badge badge-quiet">live</span>
-          </div>
-          <p class="muted small">Every rejected candidate and the reason it lost.</p>
-          <div id="log" class="log" aria-live="off"></div>
-        </section>
-
-        <section class="panel panel-note">
-          <h2 class="panel-title">How it works</h2>
-          <ol class="steps">
-            <li>Shuffles Roblox catalog searches (keywords, categories, price caps) for fresh candidates.</li>
-            <li>Pulls Rolimons' item list as a second pool.</li>
-            <li>Verifies each candidate's real creation date, price and limited flags.</li>
-            <li>Returns the first one that is buyable, non-limited and old enough — or says so.</li>
-          </ol>
-          <p class="muted small">
-            Rolimons itself doesn't expose a public API, so this uses its public item feed plus
-            Roblox's catalog API. Nothing is filtered with fake fallbacks: if the item isn't
-            genuinely eligible, it doesn't get shown.
-          </p>
-        </section>
-      </aside>
     </main>
-
-    <footer class="site-footer">
-      <span>Not affiliated with Roblox or Rolimons.</span>
-      <span class="footer-links">
-        <a href="?demo=1">Demo mode</a>
-        <a href="https://www.rolimons.com" target="_blank" rel="noopener">Rolimons</a>
-        <a href="https://www.roblox.com/catalog" target="_blank" rel="noopener">Roblox catalog</a>
-      </span>
-    </footer>
-
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script type="module">
       import { boot } from './js/app.js';

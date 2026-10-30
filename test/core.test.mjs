@@ -2,34 +2,46 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  ALLOWED_ASSET_TYPE_IDS,
+  DEFAULT_OPTIONS,
+  MAX_YEAR,
+  MIN_YEAR,
+  assetTypeGroup,
   buildItemView,
   createdYear,
   evaluateEntity,
-  formatRobux,
+  isRobloxMade,
   normalizeEntity,
   orderRolimonsCandidates,
   parseRolimonsEntry,
   parseRolimonsPayload,
-  qualificationSentence,
+  robloxUrl,
   rolimonsLooksLimited,
   rolimonsUrl,
   thumbnailUrl,
-  DEFAULT_OPTIONS,
 } from '../js/core.js';
 
+/** A fully eligible item: Roblox-made gear from 2014, on sale, not limited. */
 const base = {
   id: 123,
-  name: 'Test Cap',
-  createdIso: '2015-06-01T00:00:00Z',
-  year: 2015,
-  price: 25,
+  name: 'Linked Sword',
+  createdIso: '2014-06-01T00:00:00Z',
+  year: 2014,
+  price: 100,
   isForSale: true,
   isOffSale: false,
   limited: false,
-  assetTypeId: 8,
+  assetTypeId: 19,
   creatorName: 'Roblox',
   source: 'economy',
 };
+
+test('the year window is 2008–2019', () => {
+  assert.equal(MIN_YEAR, 2008);
+  assert.equal(MAX_YEAR, 2019);
+  assert.equal(DEFAULT_OPTIONS.minYear, 2008);
+  assert.equal(DEFAULT_OPTIONS.maxYear, 2019);
+});
 
 test('createdYear handles ISO strings, epochs and junk', () => {
   assert.equal(createdYear('2014-03-02T10:00:00Z'), 2014);
@@ -41,12 +53,23 @@ test('createdYear handles ISO strings, epochs and junk', () => {
   assert.equal(createdYear('not a date'), null);
 });
 
+test('asset types map to gear / face / accessory', () => {
+  assert.equal(assetTypeGroup(19), 'gear');
+  assert.equal(assetTypeGroup(18), 'face');
+  assert.equal(assetTypeGroup(8), 'accessory');
+  assert.equal(assetTypeGroup(41), 'accessory');
+  assert.equal(assetTypeGroup(47), 'accessory');
+  assert.equal(assetTypeGroup(11), null, 'shirts are not gear/face/accessory');
+  assert.equal(assetTypeGroup(null), null);
+  assert.deepEqual(ALLOWED_ASSET_TYPE_IDS, [8, 18, 19, 41, 42, 43, 44, 45, 46, 47]);
+});
+
 test('normalizeEntity reads Roblox economy details', () => {
   const entity = normalizeEntity(
     {
       AssetId: 555,
-      Name: '  Blue Beanie ',
-      Created: '2017-02-03T00:00:00Z',
+      Name: '  Classic Fedora ',
+      Created: '2012-02-03T00:00:00Z',
       PriceInRobux: 15,
       IsLimited: false,
       IsForSale: true,
@@ -56,14 +79,15 @@ test('normalizeEntity reads Roblox economy details', () => {
     'economy',
   );
   assert.equal(entity.id, 555);
-  assert.equal(entity.name, 'Blue Beanie');
-  assert.equal(entity.year, 2017);
+  assert.equal(entity.name, 'Classic Fedora');
+  assert.equal(entity.year, 2012);
   assert.equal(entity.price, 15);
+  assert.equal(entity.assetTypeId, 8);
   assert.equal(entity.creatorName, 'Roblox');
   assert.equal(entity.isOffSale, false);
 });
 
-test('normalizeEntity flags null price as off sale', () => {
+test('normalizeEntity flags a null price as off sale', () => {
   const entity = normalizeEntity({ AssetId: 1, Name: 'Gone', PriceInRobux: null, Created: '2012-01-01T00:00:00Z' });
   assert.equal(entity.isOffSale, true);
   assert.equal(entity.isForSale, false);
@@ -74,9 +98,41 @@ test('normalizeEntity returns null without an id', () => {
   assert.equal(normalizeEntity(null), null);
 });
 
-test('eligible item passes every rule', () => {
+test('an eligible item passes', () => {
   const verdict = evaluateEntity(base, DEFAULT_OPTIONS);
   assert.equal(verdict.ok, true, verdict.reasons.join(','));
+});
+
+test('only gear, faces and accessories are allowed', () => {
+  for (const assetTypeId of [19, 18, 8, 41, 42, 43, 44, 45, 46, 47]) {
+    assert.equal(evaluateEntity({ ...base, assetTypeId }, DEFAULT_OPTIONS).ok, true, `type ${assetTypeId}`);
+  }
+  for (const assetTypeId of [2, 3, 11, 12, 17, 24, 1]) {
+    const verdict = evaluateEntity({ ...base, assetTypeId }, DEFAULT_OPTIONS);
+    assert.equal(verdict.ok, false, `type ${assetTypeId} should be rejected`);
+    assert.ok(verdict.reasons.includes('not-allowed-type'));
+  }
+  // an unknown type is rejected rather than guessed
+  assert.equal(evaluateEntity({ ...base, assetTypeId: null }, DEFAULT_OPTIONS).ok, false);
+});
+
+test('items outside 2008–2019 are rejected, the edges are kept', () => {
+  assert.equal(evaluateEntity({ ...base, year: 2008 }, DEFAULT_OPTIONS).ok, true);
+  assert.equal(evaluateEntity({ ...base, year: 2019 }, DEFAULT_OPTIONS).ok, true);
+
+  const tooOld = evaluateEntity({ ...base, year: 2007 }, DEFAULT_OPTIONS);
+  assert.equal(tooOld.ok, false);
+  assert.ok(tooOld.reasons.includes('too-old'));
+
+  const tooNew = evaluateEntity({ ...base, year: 2020 }, DEFAULT_OPTIONS);
+  assert.equal(tooNew.ok, false);
+  assert.ok(tooNew.reasons.includes('too-new'));
+});
+
+test('unknown creation dates are rejected rather than guessed', () => {
+  const verdict = evaluateEntity({ ...base, year: null, createdIso: null }, DEFAULT_OPTIONS);
+  assert.equal(verdict.ok, false);
+  assert.ok(verdict.reasons.includes('unknown-created'));
 });
 
 test('limiteds are always rejected', () => {
@@ -85,7 +141,7 @@ test('limiteds are always rejected', () => {
   assert.ok(verdict.reasons.includes('limited'));
 });
 
-test('off sale items are always rejected (even when free)', () => {
+test('off sale items are always rejected', () => {
   const offSale = evaluateEntity({ ...base, isOffSale: true, isForSale: false }, DEFAULT_OPTIONS);
   assert.equal(offSale.ok, false);
   assert.ok(offSale.reasons.includes('off-sale'));
@@ -95,53 +151,31 @@ test('off sale items are always rejected (even when free)', () => {
   assert.ok(freeNoSale.reasons.includes('off-sale'));
 });
 
-test('items newer than the cutoff are rejected', () => {
-  const verdict = evaluateEntity({ ...base, year: 2021, createdIso: '2021-04-04T00:00:00Z' }, { ...DEFAULT_OPTIONS, year: 2019 });
-  assert.equal(verdict.ok, false);
-  assert.ok(verdict.reasons.includes('too-new'));
+test('only Roblox-made items are accepted', () => {
+  assert.equal(isRobloxMade('Roblox'), true);
+  assert.equal(isRobloxMade(' roblox '), true);
+  assert.equal(isRobloxMade('SomeBuilder'), false);
+  assert.equal(isRobloxMade(null), false);
+
+  assert.equal(evaluateEntity({ ...base, creatorName: 'SomeBuilder' }, DEFAULT_OPTIONS).ok, false);
+  assert.ok(evaluateEntity({ ...base, creatorName: 'SomeBuilder' }, DEFAULT_OPTIONS).reasons.includes('not-roblox'));
+  assert.equal(evaluateEntity({ ...base, creatorName: 'Roblox' }, DEFAULT_OPTIONS).ok, true);
 });
 
-test('exactly mode rejects other years but keeps the chosen one', () => {
-  const opts = { ...DEFAULT_OPTIONS, yearMode: 'exactly', year: 2019 };
-  assert.equal(evaluateEntity({ ...base, year: 2019 }, opts).ok, true);
-  assert.equal(evaluateEntity({ ...base, year: 2018 }, opts).ok, false);
-  assert.ok(evaluateEntity({ ...base, year: 2018 }, opts).reasons.includes('not-exact-year'));
-});
-
-test('unknown creation date is rejected rather than guessed', () => {
-  const verdict = evaluateEntity({ ...base, year: null, createdIso: null }, DEFAULT_OPTIONS);
-  assert.equal(verdict.ok, false);
-  assert.ok(verdict.reasons.includes('unknown-created'));
-});
-
-test('audio and other non-wearables are rejected', () => {
-  assert.equal(evaluateEntity({ ...base, assetTypeId: 3 }, DEFAULT_OPTIONS).ok, false);
-  assert.equal(evaluateEntity({ ...base, assetTypeId: 1 }, DEFAULT_OPTIONS).ok, false);
-  assert.equal(evaluateEntity({ ...base, assetTypeId: 8 }, DEFAULT_OPTIONS).ok, true);
-});
-
-test('robloxCreatedOnly skips community uploads', () => {
-  const opts = { ...DEFAULT_OPTIONS, robloxCreatedOnly: true };
-  assert.equal(evaluateEntity({ ...base, creatorName: 'SomeUser' }, opts).ok, false);
-  assert.equal(evaluateEntity({ ...base, creatorName: 'Roblox' }, opts).ok, true);
-});
-
-test('buildItemView exposes title, thumbnail and both links', () => {
-  const view = buildItemView(base, { trackedOnRolimons: true, source: 'economy' });
-  assert.equal(view.title, 'Test Cap');
+test('buildItemView: title, picture, year and a non-dead link', () => {
+  const view = buildItemView(base, { trackedOnRolimons: false });
+  assert.equal(view.title, 'Linked Sword');
+  assert.equal(view.year, 2014);
+  assert.equal(view.group, 'gear');
   assert.equal(view.thumbnail, thumbnailUrl(123));
   assert.match(view.thumbnail, /assetId=123/);
-  assert.equal(view.rolimonsUrl, rolimonsUrl(123));
-  assert.equal(view.robloxUrl, 'https://www.roblox.com/catalog/123');
-  assert.equal(view.priceLabel, 'R$ 25');
-  assert.equal(view.trackedOnRolimons, true);
-  assert.match(qualificationSentence(view), /2015 or earlier/);
-});
+  // not on Rolimons -> never link to a 404
+  assert.equal(view.href, robloxUrl(123));
+  assert.equal(view.href, 'https://www.roblox.com/catalog/123');
 
-test('formatRobux is kind to free/unknown prices', () => {
-  assert.equal(formatRobux(0), 'Free / unknown');
-  assert.equal(formatRobux(null), 'Free / unknown');
-  assert.equal(formatRobux(1000), 'R$ 1,000');
+  const tracked = buildItemView(base, { trackedOnRolimons: true });
+  assert.equal(tracked.href, rolimonsUrl(123));
+  assert.equal(tracked.trackedOnRolimons, true);
 });
 
 test('parseRolimonsEntry understands the positional feed', () => {
@@ -150,7 +184,6 @@ test('parseRolimonsEntry understands the positional feed', () => {
   assert.equal(item.name, 'Sparkle Time Fedora');
   assert.equal(item.acronym, 'STF');
   assert.equal(item.rap, 100000);
-  assert.equal(item.value, 120000);
   assert.equal(item.hyped, true);
   assert.equal(item.rare, true);
 });
@@ -165,14 +198,21 @@ test('parseRolimonsPayload accepts the {items:{id:[...]}} wrapper', () => {
     },
   };
   const items = parseRolimonsPayload(payload);
-  assert.deepEqual(items.map((i) => i.id), [111, 222]);
+  assert.deepEqual(
+    items.map((i) => i.id),
+    [111, 222],
+  );
   assert.equal(items[0].name, 'Alpha Cap');
 });
 
-test('parseRolimonsPayload also accepts plain arrays and junk safely', () => {
+test('parseRolimonsPayload tolerates junk', () => {
   assert.equal(parseRolimonsPayload(null).length, 0);
   assert.equal(parseRolimonsPayload({}).length, 0);
-  const items = parseRolimonsPayload([[9, 'Thing', 'TH', 1, 2, 3, 0, 0, 0, 0, 0], ['bad'], [10, '']]);
+  const items = parseRolimonsPayload([
+    [9, 'Thing', 'TH', 1, 2, 3, 0, 0, 0, 0, 0],
+    ['bad'],
+    [10, ''],
+  ]);
   assert.equal(items.length, 1);
   assert.equal(items[0].id, 9);
 });
@@ -180,7 +220,6 @@ test('parseRolimonsPayload also accepts plain arrays and junk safely', () => {
 test('rolimonsLooksLimited uses trading signals', () => {
   assert.equal(rolimonsLooksLimited({ rap: 100 }), true);
   assert.equal(rolimonsLooksLimited({ value: 50 }), true);
-  assert.equal(rolimonsLooksLimited({ demand: 2 }), true);
   assert.equal(rolimonsLooksLimited({ rare: true }), true);
   assert.equal(rolimonsLooksLimited({ rap: null, value: null, demand: 0 }), false);
 });
