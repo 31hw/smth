@@ -1,0 +1,25 @@
+{
+  "name": "rollimons",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Roll a random pre-2019 Roblox item from Rolimons — no limiteds, nothing off sale.",
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-server.mjs",
+    "start": "node dev-server.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "roblox",
+    "rolimons",
+    "random",
+    "catalog"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "jsdom": "^30.1.3"
+  }
+}
